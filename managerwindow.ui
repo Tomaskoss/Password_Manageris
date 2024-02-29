@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ManagerWindow</class>
+ <widget class="QMainWindow" name="ManagerWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>900</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Password Manageris</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QTableView" name="tableView">
+    <property name="geometry">
+     <rect>
+      <x>240</x>
+      <y>20</y>
+      <width>641</width>
+      <height>441</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgba(0,0,0,120);
+</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>901</width>
+      <height>561</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="pixmap">
+     <pixmap>../../../../Users/Tomaskosss/Desktop/škola/Bakalarská práca/bluegalaxyblured.png</pixmap>
+    </property>
+    <property name="scaledContents">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="LogOut_Button">
+    <property name="geometry">
+     <rect>
+      <x>780</x>
+      <y>520</y>
+      <width>95</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Log Out</string>
+    </property>
+   </widget>
+   <zorder>label</zorder>
+   <zorder>tableView</zorder>
+   <zorder>LogOut_Button</zorder>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>900</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuMenu">
+    <property name="title">
+     <string>Menu</string>
+    </property>
+    <addaction name="actionSave"/>
+    <addaction name="actionSave_database"/>
+    <addaction name="actionrename_database"/>
+   </widget>
+   <widget class="QMenu" name="menuPolo_ka">
+    <property name="title">
+     <string>Operation</string>
+    </property>
+    <addaction name="actionAdd"/>
+    <addaction name="actionChange"/>
+    <addaction name="actionRemove"/>
+    <addaction name="actionclone"/>
+   </widget>
+   <widget class="QMenu" name="menuTools">
+    <property name="title">
+     <string>Tools</string>
+    </property>
+    <addaction name="actionPassword_generator"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp_guide">
+    <property name="title">
+     <string>Help guide</string>
+    </property>
+    <addaction name="actionGuide_for_begginers"/>
+    <addaction name="actionTool_tips"/>
+   </widget>
+   <widget class="QMenu" name="menuSettings">
+    <property name="title">
+     <string>Settings</string>
+    </property>
+    <addaction name="separator"/>
+    <addaction name="separator"/>
+   </widget>
+   <addaction name="menuMenu"/>
+   <addaction name="menuPolo_ka"/>
+   <addaction name="menuTools"/>
+   <addaction name="menuHelp_guide"/>
+   <addaction name="menuSettings"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionAdd">
+   <property name="text">
+    <string>Add</string>
+   </property>
+  </action>
+  <action name="actionChange">
+   <property name="text">
+    <string>Change</string>
+   </property>
+  </action>
+  <action name="actionRemove">
+   <property name="text">
+    <string>Remove</string>
+   </property>
+  </action>
+  <action name="actionclone">
+   <property name="text">
+    <string>Clone</string>
+   </property>
+  </action>
+  <action name="actionPassword_generator">
+   <property name="text">
+    <string>Password generator</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="text">
+    <string>New database</string>
+   </property>
+  </action>
+  <action name="actionSave_database">
+   <property name="text">
+    <string>Delete database</string>
+   </property>
+  </action>
+  <action name="actionrename_database">
+   <property name="text">
+    <string>Rename database</string>
+   </property>
+  </action>
+  <action name="actionGuide_for_begginers">
+   <property name="text">
+    <string>Guide for begginers</string>
+   </property>
+  </action>
+  <action name="actionTool_tips">
+   <property name="text">
+    <string>Tool tips</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
