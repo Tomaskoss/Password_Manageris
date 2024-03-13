@@ -29,10 +29,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         encryptindialog.h encryptindialog.cpp encryptindialog.ui
 
 
-
-
-
-
     )
 
 
@@ -54,19 +50,18 @@ else()
     endif()
 endif()
 
-  include_directories("C:\\QT\\projekt\\Bakalarska_Praca\\libs\\phc-winner-argon2-master\\include")
+
   include_directories("C:\\Program\ Files\\MySQL\\MySQL\ Server\ 8.3\\lib")
   include_directories("C:\\Program\ Files\\MySQL\\MySQL\ Server\ 8.3\\include")
   include_directories("C:\\QT\\6.6.2\\Src\\qtbase\\src\\plugins\\sqldrivers\\plugins\\sqldrivers\\")
+  include_directories("C:\\QT\\projekt\\Bakalarska_Praca\\libs\\argon2")
+  include_directories("C:\\QT\\projekt\\Bakalarska_Praca\\libs\\argon2\\include")
 
-  link_directories("C:\\QT\\projekt\\Bakalarska_Praca\\libs\\phc-winner-argon2-master\\")
-
-
-  target_link_libraries(PasswordManageris PRIVATE Qt${QT_VERSION_MAJOR}::Widgets )
+  link_directories("C:\\QT\\projekt\\Bakalarska_Praca\\libs\\argon2\\")
+  target_link_libraries(PasswordManageris PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
   target_link_libraries(PasswordManageris PRIVATE Qt6::Sql)
   target_link_libraries(PasswordManageris PRIVATE Qt6::Core)
-  target_link_libraries(PasswordManageris PRIVATE argon2)
-
+  target_link_libraries(PasswordManageris PRIVATE "C:\\QT\\projekt\\Bakalarska_Praca\\libs\\argon2\\libargon2.a")
 
   target_compile_features(PasswordManageris PRIVATE cxx_range_for)
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

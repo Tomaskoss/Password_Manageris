@@ -1,6 +1,7 @@
 #ifndef MANAGERWINDOW_H
 #define MANAGERWINDOW_H
 
+#include "qsqlquerymodel.h"
 #include <QMainWindow>
 
 namespace Ui {
@@ -12,7 +13,7 @@ class ManagerWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit ManagerWindow(QWidget *parent = nullptr);
+    explicit ManagerWindow(const QString &login_name,QWidget *parent = nullptr);
     ~ManagerWindow();
 
 private slots:
@@ -20,8 +21,12 @@ private slots:
 
     void on_LogOut_Button_clicked();
 
+    void on_actionAdd_triggered();
+
 private:
     Ui::ManagerWindow *ui;
+    QString usernameL;
+    QSqlQueryModel *model;
 };
 
 #endif // MANAGERWINDOW_H

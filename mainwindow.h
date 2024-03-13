@@ -24,6 +24,16 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    static QSqlDatabase dataBase;
+    void setUsernameL(const QString& username);
+    QString getUsernameL() const;
+
+    void setPasswordL(const QString& password);
+    QString getPasswordL() const;
+
+    void setPasswordM(const QString& password);
+    QString getPasswordM() const;
+
 
 
 private slots:
@@ -36,8 +46,12 @@ private slots:
 private:
     Ui::MainWindow *ui;
 
-    QSqlDatabase dataBase;
+    //QSqlDatabase dataBase;
     QSqlQuery query();
-
+    QString usernameL;
+    QString passwordL;
+    QString passwordM;
 };
+
+
 #endif // MAINWINDOW_H

@@ -1,6 +1,6 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
-#include "managerwindow.h"
+#include "argon2.h"
 #include "registerwindow.h"
 #include <qsqldatabase.h>
 #include <QString>
@@ -9,9 +9,9 @@
 #include <QDebug>
 #include <QSqlQuery>
 #include <QMessageBox>
-
+#include "managerwindow.h"
 using namespace std;
-
+QSqlDatabase MainWindow::dataBase; // Initialize the static member
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -25,13 +25,13 @@ MainWindow::MainWindow(QWidget *parent)
     dataBase.setPassword("%;`jXQG|(l8I]KDWXm,V58yQ<Oi<hq3P"); // Password
     dataBase.setPort(3306);
     dataBase.open();
-    QSqlDatabase dataBase = QSqlDatabase::database();
+
     // Check if the MySQL driver is available
     if (!dataBase.open()) {
         qDebug() << "Error: Failed to open database:" << dataBase.lastError().text();
     }
     qDebug() << "Database opened successfully";
-    QSqlQuery query(dataBase);
+    QSqlQuery query;
     query.executedQuery();
 
 }
@@ -46,6 +46,7 @@ void MainWindow::on_SignUp_Button_clicked()
     hide();
     RegisterWindow *registerWindow = new RegisterWindow(this);
     registerWindow->show();
+
 }
 
 
@@ -57,27 +58,72 @@ void MainWindow::on_Quit_Button_clicked()
 
 void MainWindow::on_LogIn_Button_clicked()
 {
-    QString username = ui->line_username->text();
-    QString password = ui->line_password->text();
-    //prerobit na sql dotazy
-    if(username =="tester1" && password=="12345678"){
-        ui->status_message->setText("login is sucessfull");
-        close();
-        ManagerWindow *managerWindow = new ManagerWindow(this);
-        managerWindow->show();
-    }
-    else if(username.isEmpty() || password.isEmpty())
+    setUsernameL( ui->line_username->text());
+     passwordL = ui->line_password->text();
+    size_t passwordL_lenght=passwordL.length();
+
+
+    if(getUsernameL().isEmpty() || passwordL.isEmpty())
     {
         ui->status_message->setText("Username or password is blank");
+        return;
     }
-    else {
-        ui->status_message->setText("Username or password is incorrect");
+    QSqlQuery query;
+    query.prepare("SELECT * FROM `passwordmanager`.`login_information` WHERE Login_name = :username");
+    query.bindValue(":username", getUsernameL());
+    if(query.exec()){
+        if(query.next()){
+         passwordM = query.value("Login_master_password").toString();
+        } else{
+            qDebug()<<"Username not found";
+        }
+    }else {
+        qDebug() << "Query execution error:" << query.lastError().text();
     }
+    // Convert QString to const char* for passwordL
+    std::string passwordL_str = passwordL.toStdString();
+    const char* passwordL_char = passwordL_str.c_str();
 
+    // Convert QString to const char* for passwordM
+    std::string passwordM_str = passwordM.toStdString();
+    const char* passwordM_char = passwordM_str.c_str();
+    if(query.exec() && query.next())
+    {
+        qDebug() << "usrL "<<getUsernameL();
+        qDebug() << "passL "<<passwordL;
+        qDebug() << "passM "<<passwordM;
+       // argon2_verify(storedHashedPassword.toUtf8().constData(), password.toUtf8().constData(), password.length(),Argon2_id) == ARGON2_OK;
+           int verificationResult =argon2id_verify(passwordM_char,passwordL_char,passwordL_lenght);
+            if (verificationResult == ARGON2_OK)
+            {
+                // Passwords match
+                qDebug() << "Login successful";
+                // hide();
+                ManagerWindow *managerWindow = new ManagerWindow(usernameL,this);
+                managerWindow->show();
 
+            }
+            else
+            {
+                // Passwords do not match
+                qDebug() << "Login failed";
+            }
+        }
+        else
+        {
+            // Handle query execution failure or no matching user
+            qDebug() << "Login query failed:" << query.lastError().text();
+        }
 
+}
 
+void MainWindow::setUsernameL(const QString& username)
+{
+    usernameL = username;
+}
 
-
+QString MainWindow::getUsernameL() const
+{
+    return usernameL;
 }
 

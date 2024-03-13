@@ -17,6 +17,10 @@ public:
     ~RegisterWindow();
    bool isValidEmail(QString &email);
 
+
+   QString getMasterPassword() const;  // Getter method
+   QString getLoginName() const;
+
 private slots:
     void on_Back_Button_clicked();
 
@@ -25,6 +29,8 @@ private slots:
 private:
     Ui::RegisterWindow *ui;
     QSqlQuery query;
+    QString master_password;
+    QString usernameL ;
 };
 
 #endif // REGISTERWINDOW_H

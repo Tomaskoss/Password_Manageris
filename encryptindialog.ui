@@ -63,9 +63,9 @@
   <widget class="QLabel" name="label_2">
    <property name="geometry">
     <rect>
-     <x>190</x>
+     <x>160</x>
      <y>120</y>
-     <width>141</width>
+     <width>181</width>
      <height>21</height>
     </rect>
    </property>
@@ -77,7 +77,7 @@
     <string>Funkcia odvodenia klúča</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="Quit_Button">
+  <widget class="QPushButton" name="Back_Button">
    <property name="geometry">
     <rect>
      <x>210</x>
@@ -90,7 +90,7 @@
     <string>Back</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="Quit_Button_2">
+  <widget class="QPushButton" name="Confirm_Button">
    <property name="geometry">
     <rect>
      <x>450</x>
@@ -103,7 +103,7 @@
     <string>Confirm</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="Quit_Button_3">
+  <widget class="QPushButton" name="Quit_Button">
    <property name="geometry">
     <rect>
      <x>330</x>
