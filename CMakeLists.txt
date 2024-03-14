@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 
 project(PasswordManageris VERSION 0.1 LANGUAGES CXX)
 
+set(PROJECT_FOLDER "D:\\Password_Manageris")
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -54,14 +55,14 @@ endif()
   include_directories("C:\\Program\ Files\\MySQL\\MySQL\ Server\ 8.3\\lib")
   include_directories("C:\\Program\ Files\\MySQL\\MySQL\ Server\ 8.3\\include")
   include_directories("C:\\QT\\6.6.2\\Src\\qtbase\\src\\plugins\\sqldrivers\\plugins\\sqldrivers\\")
-  include_directories("C:\\QT\\projekt\\Bakalarska_Praca\\libs\\argon2")
-  include_directories("C:\\QT\\projekt\\Bakalarska_Praca\\libs\\argon2\\include")
+  include_directories("${PROJECT_FOLDER}\\libs\\argon2")
+  include_directories("${PROJECT_FOLDER}\\libs\\argon2\\include")
 
-  link_directories("C:\\QT\\projekt\\Bakalarska_Praca\\libs\\argon2\\")
+  link_directories("${PROJECT_FOLDER}\\libs\\argon2\\")
   target_link_libraries(PasswordManageris PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
   target_link_libraries(PasswordManageris PRIVATE Qt6::Sql)
   target_link_libraries(PasswordManageris PRIVATE Qt6::Core)
-  target_link_libraries(PasswordManageris PRIVATE "C:\\QT\\projekt\\Bakalarska_Praca\\libs\\argon2\\libargon2.a")
+  target_link_libraries(PasswordManageris PRIVATE "${PROJECT_FOLDER}\\libs\\argon2\\libargon2.a")
 
   target_compile_features(PasswordManageris PRIVATE cxx_range_for)
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
