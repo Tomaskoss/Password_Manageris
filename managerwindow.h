@@ -27,7 +27,8 @@ private slots:
 
 
     void on_tableView_clicked(const QModelIndex &index);
-
+signals:
+    void logOut();
 private:
     Ui::ManagerWindow *ui;
     QString login_name;

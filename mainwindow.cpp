@@ -1,15 +1,17 @@
 #include "mainwindow.h"
+#include "managerwindow.h"
 #include "./ui_mainwindow.h"
 #include "argon2.h"
 #include "registerwindow.h"
 #include <qsqldatabase.h>
+
 #include <QString>
 #include <QSqlDatabase>
 #include <QSqlError>
 #include <QDebug>
 #include <QSqlQuery>
 #include <QMessageBox>
-#include "managerwindow.h"
+
 using namespace std;
 QSqlDatabase MainWindow::dataBase; // Initialize the static member
 MainWindow::MainWindow(QWidget *parent)
@@ -98,7 +100,7 @@ void MainWindow::on_LogIn_Button_clicked()
             {
                 // Passwords match
                 qDebug() << "Login successful";
-                // hide();
+                 hide();
                 ManagerWindow *managerWindow = new ManagerWindow(usernameL,this);
                 managerWindow->show();
 

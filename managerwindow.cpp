@@ -40,6 +40,7 @@ void ManagerWindow::on_LogOut_Button_clicked()
     close();
     parentWidget()->show();
     delete this->model;
+
 }
 
 
