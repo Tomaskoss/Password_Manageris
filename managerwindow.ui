@@ -96,7 +96,7 @@
      <bool>true</bool>
     </attribute>
    </widget>
-   <widget class="QLabel" name="label">
+   <widget class="QLabel" name="background_picture">
     <property name="geometry">
      <rect>
       <x>0</x>
@@ -109,7 +109,7 @@
      <string/>
     </property>
     <property name="pixmap">
-     <pixmap>../../../../Users/Tomaskosss/Desktop/škola/Bakalarská práca/bluegalaxyblured.png</pixmap>
+     <pixmap resource="pictures.qrc">:/pictures/pictures/bluegalaxyblured.png</pixmap>
     </property>
     <property name="scaledContents">
      <bool>true</bool>
@@ -128,9 +128,29 @@
      <string>Log Out</string>
     </property>
    </widget>
-   <zorder>label</zorder>
+   <widget class="QLabel" name="Logo">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>20</y>
+      <width>61</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="pixmap">
+     <pixmap resource="pictures.qrc">:/pictures/pictures/output-onlinepngtools.png</pixmap>
+    </property>
+    <property name="scaledContents">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <zorder>background_picture</zorder>
    <zorder>LogOut_Button</zorder>
    <zorder>tableView</zorder>
+   <zorder>Logo</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -245,6 +265,8 @@
    </property>
   </action>
  </widget>
- <resources/>
+ <resources>
+  <include location="pictures.qrc"/>
+ </resources>
  <connections/>
 </ui>

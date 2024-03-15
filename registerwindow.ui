@@ -55,7 +55,7 @@
      <string/>
     </property>
     <property name="pixmap">
-     <pixmap>../../../../Users/Tomaskosss/Desktop/škola/Bakalarská práca/output-onlinepngtools.png</pixmap>
+     <pixmap resource="pictures.qrc">:/pictures/pictures/output-onlinepngtools.png</pixmap>
     </property>
     <property name="scaledContents">
      <bool>true</bool>
@@ -264,7 +264,7 @@
      <string/>
     </property>
     <property name="pixmap">
-     <pixmap>../../../../Users/Tomaskosss/Desktop/škola/Bakalarská práca/bluegalaxyblured.png</pixmap>
+     <pixmap resource="pictures.qrc">:/pictures/pictures/bluegalaxyblured.png</pixmap>
     </property>
     <property name="scaledContents">
      <bool>true</bool>
@@ -324,6 +324,8 @@
    <zorder>status_message</zorder>
   </widget>
  </widget>
- <resources/>
+ <resources>
+  <include location="pictures.qrc"/>
+ </resources>
  <connections/>
 </ui>

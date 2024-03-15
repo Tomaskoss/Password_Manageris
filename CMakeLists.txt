@@ -27,7 +27,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ${PROJECT_SOURCES}
         registerwindow.h registerwindow.cpp registerwindow.ui
         managerwindow.h managerwindow.cpp managerwindow.ui
-        encryptindialog.h encryptindialog.cpp encryptindialog.ui
+        encryptindialog.h encryptindialog.cpp encryptindialog.ui pictures.qrc
 
 
     )

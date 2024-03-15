@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/pictures">
+        <file>pictures/bluegalaxyblured.png</file>
+        <file>pictures/output-onlinepngtools.png</file>
+    </qresource>
+</RCC>
