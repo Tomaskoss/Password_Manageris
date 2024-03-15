@@ -70,7 +70,7 @@ void EncryptinDialog::on_Confirm_Button_clicked()
                 "`Name of APP` VARCHAR(48) NULL,"
                 "`Username` VARCHAR(48) NULL,"
                 "`Password` VARCHAR(64) NULL,"
-                "`URL` VARCHAR(48) NULL,"
+                "`URL` VARCHAR(512) NULL,"
                 "`log` DATETIME NULL)");
             // Execute the prepared statement
             if (query.exec()) {

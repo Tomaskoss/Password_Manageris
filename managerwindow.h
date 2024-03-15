@@ -1,6 +1,7 @@
 #ifndef MANAGERWINDOW_H
 #define MANAGERWINDOW_H
 
+#include "qsqlquery.h"
 #include "qsqlquerymodel.h"
 #include <QMainWindow>
 
@@ -15,18 +16,24 @@ class ManagerWindow : public QMainWindow
 public:
     explicit ManagerWindow(const QString &login_name,QWidget *parent = nullptr);
     ~ManagerWindow();
-
+    void refreshTable();
 private slots:
-    void on_tableView_activated(const QModelIndex &index);
 
     void on_LogOut_Button_clicked();
 
     void on_actionAdd_triggered();
 
+    void on_actionRemove_triggered();
+
+
+    void on_tableView_clicked(const QModelIndex &index);
+
 private:
     Ui::ManagerWindow *ui;
-    QString usernameL;
+    QString login_name;
     QSqlQueryModel *model;
+    QString selectedRowID;
+    QSqlQuery query;
 };
 
 #endif // MANAGERWINDOW_H
