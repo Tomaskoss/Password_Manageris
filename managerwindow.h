@@ -24,7 +24,7 @@ private slots:
     void on_actionAdd_triggered();
 
     void on_actionRemove_triggered();
-
+    void resetAutoIncrementAndReindex();
 
     void on_tableView_clicked(const QModelIndex &index);
 signals:
@@ -35,6 +35,7 @@ private:
     QSqlQueryModel *model;
     QString selectedRowID;
     QSqlQuery query;
+    QString ID_Column;
 };
 
 #endif // MANAGERWINDOW_H

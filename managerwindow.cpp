@@ -50,10 +50,9 @@ void ManagerWindow::on_actionAdd_triggered()
     QString queryString = "INSERT INTO `passwordmanager`.`" + login_name + "_password_data` "
                                                                            "(`Name of APP`, `Username`, `Password`, `URL`, `log`) "
                                                                            "VALUES (?, ?, ?, ?, NOW());";
-
     // Create a QSqlQuery object
     QSqlQuery query;
-
+    // Use the selectedRowID variable to construct the SQL query for deletion
     // Prepare the query with the SQL statement
     if (query.prepare(queryString)) {
         // Bind values to placeholders
@@ -65,6 +64,7 @@ void ManagerWindow::on_actionAdd_triggered()
         // Execute the prepared statement
         if (query.exec()) {
             // If insertion is successful, refresh the table
+            resetAutoIncrementAndReindex();
             refreshTable();
         } else {
             // Handle query execution error
@@ -87,21 +87,23 @@ void ManagerWindow::refreshTable() {
     if (model) {
         // Use a prepared statement for the query
         QSqlQuery query;
-        QString queryString = "SELECT `Name of APP`, `Username`, `Password`, `URL`, `LOG` FROM `passwordmanager`.`" + login_name + "_password_data`;";
+        QString queryString = "SELECT `ID`, `Name of APP`, `Username`, `Password`, `URL`, `LOG` FROM `passwordmanager`.`" + login_name + "_password_data`;";
         query.prepare(queryString);
 
         // Execute the prepared statement
         if (query.exec()) {
             // Pass the QSqlQuery object by move to setQuery
             model->setQuery(std::move(query));
-            model->setHeaderData(0, Qt::Horizontal, tr("Application"));
-            model->setHeaderData(1, Qt::Horizontal, tr("Username"));
-            model->setHeaderData(2, Qt::Horizontal, tr("Password"));
-            model->setHeaderData(3, Qt::Horizontal, tr("URL"));
-            model->setHeaderData(4, Qt::Horizontal, tr("LOG"));
+
+            model->setHeaderData(1, Qt::Horizontal, tr("Application"));
+            model->setHeaderData(2, Qt::Horizontal, tr("Username"));
+            model->setHeaderData(3, Qt::Horizontal, tr("Password"));
+            model->setHeaderData(4, Qt::Horizontal, tr("URL"));
+            model->setHeaderData(5, Qt::Horizontal, tr("LOG"));
             // Set the model for the table view
             ui->tableView->setModel(model);
-
+            // Hide the column containing the row IDs
+            ui->tableView->hideColumn(0);
             // Set the width of the header to x pixels
             ui->tableView->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
             ui->tableView->horizontalHeader()->resizeSection(3, 350);
@@ -118,25 +120,28 @@ void ManagerWindow::refreshTable() {
 void ManagerWindow::on_actionRemove_triggered()
 {
      QSqlQuery query;
-    // Use the selectedRowID variable to construct the SQL query for deletion
-    QString queryString = "DELETE FROM `passwordmanager`.`" + login_name + "_password_data` WHERE (`ID` = ?)";
-    // QString queryString = "SELECT `Name of APP`, `Username`, `Password`, `URL`, `LOG` FROM `passwordmanager`.`" + login_name + "_password_data`;";
+     QString deleteQueryString = "DELETE FROM `passwordmanager`.`" + login_name + "_password_data` WHERE (`ID` = ?)"; // Replace ColumnName with the actual name of the first column
     // Prepare the query with the SQL statement
-    if (query.prepare(queryString)) {
-        // Bind the selectedRowID value to the placeholder
-        query.addBindValue(selectedRowID.toInt()); // Assuming selectedRowID is a QString
+    if (query.prepare(deleteQueryString)) {
 
+        // Bind the selectedRowID value to the placeholder
+        query.addBindValue(ID_Column); // Assuming selectedRowID is a QString
         // Execute the prepared statement
         if (query.exec()) {
             qDebug() << "Row with ID" << selectedRowID << "removed successfully.";
+            qDebug() << "Row with ID in database" << ID_Column << "removed successfully.";
+            selectedRowID=NULL;
+            ID_Column=NULL;
+            resetAutoIncrementAndReindex();
             refreshTable();
-            // Optionally, refresh the table or update the view after removal
+
         } else {
             qDebug() << "Error removing row:" << query.lastError().text();
         }
     } else {
         qDebug() << "Query preparation error:" << query.lastError().text();
     }
+
 }
 
 void ManagerWindow::on_tableView_clicked(const QModelIndex &index)
@@ -144,6 +149,32 @@ void ManagerWindow::on_tableView_clicked(const QModelIndex &index)
     // Retrieve the ID of the row
     selectedRowID = QString::number(index.row() + 1); // Add 1 to row index to make it 1-based ID
     qDebug() << "Row ID:" << selectedRowID;
-    qDebug() <<login_name;
+    // Retrieve data from the model
+    QVariant data = index.model()->data(index.model()->index(index.row(), 0)); // Assuming the first column is at index 0
+    ID_Column = data.toString();
+    //qDebug() << "Value of the first column:" << ID_Column;
 }
 
+
+void ManagerWindow::resetAutoIncrementAndReindex()
+{
+
+    QString alterQueryString = "ALTER TABLE `passwordmanager`.`" + login_name + "_password_data` AUTO_INCREMENT = 1";
+    QString reindexQueryString = "SET @id := 0; UPDATE `passwordmanager`.`" + login_name + "_password_data` SET `ID` = @id := @id + 1";
+    // Create QSqlQuery objects for each query
+    QSqlQuery alterQuery;
+    QSqlQuery reindexQuery;
+    // Reset the auto-increment value
+    if (alterQuery.exec(alterQueryString)) {
+        qDebug() << "Table auto-increment reset successfully.";
+    } else {
+        qDebug() << "Error resetting table auto-increment:" << alterQuery.lastError().text();
+    }
+
+    // Re-index the ID column
+    if (reindexQuery.exec(reindexQueryString)) {
+        qDebug() << "Table re-indexed successfully.";
+    } else {
+        qDebug() << "Error re-indexing table:" << reindexQuery.lastError().text();
+    }
+}
