@@ -28,6 +28,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         registerwindow.h registerwindow.cpp registerwindow.ui
         managerwindow.h managerwindow.cpp managerwindow.ui
         encryptindialog.h encryptindialog.cpp encryptindialog.ui pictures.qrc
+        dialog_add.h dialog_add.cpp dialog_add.ui
 
 
     )

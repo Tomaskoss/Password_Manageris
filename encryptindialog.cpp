@@ -83,9 +83,10 @@ void EncryptinDialog::on_Confirm_Button_clicked()
                 query.bindValue(":password", storedPasswordQString);
                 //query.bindValue(":salt", hexSalt);
                 if(query.exec()){
+                    close();
                     qDebug() << "Insert created successfully";
-                    MainWindow *mainWindow = new MainWindow(this);
-                    mainWindow->show();
+                    // MainWindow *mainWindow = new MainWindow(this);
+                    // mainWindow->show();
                 }
                 else{
                     qDebug() << "Error: " << query.lastError().text();

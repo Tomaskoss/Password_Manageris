@@ -1,4 +1,5 @@
 #include "managerwindow.h"
+#include "dialog_add.h"
 #include "qsqlerror.h"
 #include "qsqlquery.h"
 #include "ui_managerwindow.h"
@@ -46,6 +47,9 @@ void ManagerWindow::on_LogOut_Button_clicked()
 
 void ManagerWindow::on_actionAdd_triggered()
 {
+    hide();
+    Dialog_ADD *dialog_add = new Dialog_ADD();
+    dialog_add->show();
     // Prepare the SQL statement with placeholders
     QString queryString = "INSERT INTO `passwordmanager`.`" + login_name + "_password_data` "
                                                                            "(`Name of APP`, `Username`, `Password`, `URL`, `log`) "
@@ -155,10 +159,8 @@ void ManagerWindow::on_tableView_clicked(const QModelIndex &index)
     //qDebug() << "Value of the first column:" << ID_Column;
 }
 
-
 void ManagerWindow::resetAutoIncrementAndReindex()
 {
-
     QString alterQueryString = "ALTER TABLE `passwordmanager`.`" + login_name + "_password_data` AUTO_INCREMENT = 1";
     QString reindexQueryString = "SET @id := 0; UPDATE `passwordmanager`.`" + login_name + "_password_data` SET `ID` = @id := @id + 1";
     // Create QSqlQuery objects for each query

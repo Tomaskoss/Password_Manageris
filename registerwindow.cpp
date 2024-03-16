@@ -42,6 +42,7 @@ void RegisterWindow::on_SignUp_Button_clicked()
                     return;
                 }
                 else if (!query.next()){
+                    hide();
                     EncryptinDialog *encryptindialog = new EncryptinDialog(usernameL,master_password,this);
                     encryptindialog->show();
                 }
