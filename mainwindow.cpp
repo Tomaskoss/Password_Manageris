@@ -91,9 +91,9 @@ void MainWindow::on_LogIn_Button_clicked()
     const char* passwordM_char = passwordM_str.c_str();
     if(query.exec() && query.next())
     {
-        qDebug() << "usrL "<<getUsernameL();
-        qDebug() << "passL "<<passwordL;
-        qDebug() << "passM "<<passwordM;
+        // qDebug() << "usrL "<<getUsernameL();
+        // qDebug() << "passL "<<passwordL;
+        // qDebug() << "passM "<<passwordM;
        // argon2_verify(storedHashedPassword.toUtf8().constData(), password.toUtf8().constData(), password.length(),Argon2_id) == ARGON2_OK;
            int verificationResult =argon2id_verify(passwordM_char,passwordL_char,passwordL_lenght);
             if (verificationResult == ARGON2_OK)
@@ -101,8 +101,11 @@ void MainWindow::on_LogIn_Button_clicked()
                 // Passwords match
                 qDebug() << "Login successful";
                  hide();
-                ManagerWindow *managerWindow = new ManagerWindow(usernameL,this);
+                ManagerWindow *managerWindow = new ManagerWindow(usernameL);
+                managerWindow->setAttribute(Qt::WA_DeleteOnClose); // Ensure deletion on close
+                managerWindow->setWindowFlags(Qt::Window); // Ensure appropriate window flags are set
                 managerWindow->show();
+
 
             }
             else

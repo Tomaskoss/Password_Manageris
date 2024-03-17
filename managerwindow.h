@@ -14,22 +14,24 @@ class ManagerWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit ManagerWindow(const QString &login_name,QWidget *parent = nullptr);
+    explicit ManagerWindow(const QString &login_name);
     ~ManagerWindow();
     void refreshTable();
 private slots:
 
     void on_LogOut_Button_clicked();
-
     void on_actionAdd_triggered();
-
     void on_actionRemove_triggered();
     void resetAutoIncrementAndReindex();
-
     void on_tableView_clicked(const QModelIndex &index);
-signals:
-    void logOut();
+    void on_actionChange_triggered();
+    void on_Back_Button_clicked();
+    void on_Confirm_Button_clicked();
+
 private:
+    void addRecord(const QString &appName, const QString &username, const QString &password, const QString &url);
+
+    void updateRecord(const QString &appName, const QString &username, const QString &password, const QString &url, const QString &id);
     Ui::ManagerWindow *ui;
     QString login_name;
     QSqlQueryModel *model;

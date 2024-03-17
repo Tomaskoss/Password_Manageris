@@ -43,8 +43,6 @@ private slots:
 
     void on_LogIn_Button_clicked();
 
-    void on_SignUp_Button_2_clicked();
-
 private:
     Ui::MainWindow *ui;
 

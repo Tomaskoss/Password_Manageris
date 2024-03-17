@@ -1,25 +1,23 @@
 #include "managerwindow.h"
-#include "dialog_add.h"
+#include "mainwindow.h"
 #include "qsqlerror.h"
 #include "qsqlquery.h"
 #include "ui_managerwindow.h"
 #include <QSqlDatabase>
 #include <QSqlQueryModel>
 
-ManagerWindow::ManagerWindow(const QString &login_name, QWidget *parent)
-    : QMainWindow(parent),
+ManagerWindow::ManagerWindow(const QString &login_name)
+    : QMainWindow(),
      ui(new Ui::ManagerWindow),
-    login_name(login_name)
+    login_name(login_name),
+    model(new QSqlQueryModel(this))
 
 {
 
     ui->setupUi(this);
-     this->model = new QSqlQueryModel();
-
-    qDebug() << "login_name:"<<login_name;
+    setWindowFlags(windowFlags() | Qt::Window);
+    ui->stackedWidget->setCurrentIndex(0);
     query.prepare("SELECT * FROM `passwordmanager`.`"+login_name+"_password_data`");
-    qDebug() << "usernameL"<<login_name;
-    qDebug() << "usernameL"<<login_name;
     if (query.exec()) {
         model->setQuery(std::move(query));
         refreshTable();
@@ -38,46 +36,22 @@ ManagerWindow::~ManagerWindow()
 
 void ManagerWindow::on_LogOut_Button_clicked()
 {
-    close();
-    parentWidget()->show();
-    delete this->model;
+    hide();
+
+    // Show the MainWindow
+    MainWindow *mainWindow = new MainWindow(); // Assuming MainWindow has a default constructor
+    mainWindow->show();
 
 }
 
 
 void ManagerWindow::on_actionAdd_triggered()
 {
-    hide();
-    Dialog_ADD *dialog_add = new Dialog_ADD();
-    dialog_add->show();
-    // Prepare the SQL statement with placeholders
-    QString queryString = "INSERT INTO `passwordmanager`.`" + login_name + "_password_data` "
-                                                                           "(`Name of APP`, `Username`, `Password`, `URL`, `log`) "
-                                                                           "VALUES (?, ?, ?, ?, NOW());";
-    // Create a QSqlQuery object
-    QSqlQuery query;
-    // Use the selectedRowID variable to construct the SQL query for deletion
-    // Prepare the query with the SQL statement
-    if (query.prepare(queryString)) {
-        // Bind values to placeholders
-        query.addBindValue("Bugisoft"); // Example value for application name
-        query.addBindValue("Test");     // Example value for username
-        query.addBindValue("Test123");  // Example value for password
-        query.addBindValue("https://www.ubisoft.com/en-us/"); // Example value for URL
 
-        // Execute the prepared statement
-        if (query.exec()) {
-            // If insertion is successful, refresh the table
-            resetAutoIncrementAndReindex();
-            refreshTable();
-        } else {
-            // Handle query execution error
-            qDebug() << "Query execution error:" << query.lastError().text();
-        }
-    } else {
-        // Handle query preparation error
-        qDebug() << "Query preparation error:" << query.lastError().text();
-    }
+    ui->stackedWidget->setCurrentIndex(1);
+    selectedRowID.clear();
+
+
 }
 
 void ManagerWindow::refreshTable() {
@@ -123,6 +97,8 @@ void ManagerWindow::refreshTable() {
 
 void ManagerWindow::on_actionRemove_triggered()
 {
+
+
      QSqlQuery query;
      QString deleteQueryString = "DELETE FROM `passwordmanager`.`" + login_name + "_password_data` WHERE (`ID` = ?)"; // Replace ColumnName with the actual name of the first column
     // Prepare the query with the SQL statement
@@ -156,6 +132,16 @@ void ManagerWindow::on_tableView_clicked(const QModelIndex &index)
     // Retrieve data from the model
     QVariant data = index.model()->data(index.model()->index(index.row(), 0)); // Assuming the first column is at index 0
     ID_Column = data.toString();
+
+    QString appName = model->data(model->index(index.row(), 1)).toString();
+    QString username = model->data(model->index(index.row(), 2)).toString();
+    QString password = model->data(model->index(index.row(), 3)).toString();
+    QString url = model->data(model->index(index.row(), 4)).toString();
+
+    ui->app_Line->setText(appName);
+    ui->username_Line->setText(username);
+    ui->URL_Line->setText(url);
+    ui->password_Line->setText(password);
     //qDebug() << "Value of the first column:" << ID_Column;
 }
 
@@ -178,5 +164,99 @@ void ManagerWindow::resetAutoIncrementAndReindex()
         qDebug() << "Table re-indexed successfully.";
     } else {
         qDebug() << "Error re-indexing table:" << reindexQuery.lastError().text();
+    }
+}
+
+
+void ManagerWindow::on_actionChange_triggered()
+{
+
+    ui->stackedWidget->setCurrentIndex(1);
+}
+
+
+void ManagerWindow::on_Back_Button_clicked()
+{
+    ui->stackedWidget->setCurrentIndex(0);
+
+}
+
+
+void ManagerWindow::on_Confirm_Button_clicked()
+{
+
+
+    ui->stackedWidget->setCurrentIndex(0);
+    // Extract the ID of the selected row
+    QString id = ID_Column;
+    // Extract the data from the line edits
+    QString appName = ui->app_Line->text();
+    QString username = ui->username_Line->text();
+    QString password = ui->password_Line->text();
+    QString url = ui->URL_Line->text();
+    if(selectedRowID.isEmpty()){
+        addRecord(appName, username, password, url);
+    }
+    else{
+        updateRecord(appName, username, password, url,  id);
+    }
+    refreshTable();
+
+}
+
+void ManagerWindow::updateRecord(const QString &appName, const QString &username, const QString &password, const QString &url, const QString &id){
+    QSqlQuery query;
+    QString updateQueryString = "UPDATE `passwordmanager`.`test123_password_data` "
+                                "SET `Name of APP` = ?, "
+                                "`Username` = ?, "
+                                "`Password` = ?, "
+                                "`URL` = ?, "
+                                "`log` = NOW() "
+                                "WHERE `ID` = ?";
+
+    // Prepare the query with the SQL statement
+    if (query.prepare(updateQueryString)) {
+        // Bind values to placeholders
+        query.addBindValue(appName);
+        query.addBindValue(username);
+        query.addBindValue(password);
+        query.addBindValue(url);
+        query.addBindValue(id);
+
+        // Execute the prepared statement
+        if (query.exec()) {
+            qDebug() << "Record updated successfully.";
+            refreshTable(); // Refresh the table after updating
+        } else {
+            qDebug() << "Error updating record:" << query.lastError().text();
+        }
+    } else {
+        qDebug() << "Query preparation error:" << query.lastError().text();
+    }
+}
+void ManagerWindow::addRecord(const QString &appName, const QString &username, const QString &password, const QString &url)
+{
+    QSqlQuery query;
+    QString insertQueryString = "INSERT INTO `passwordmanager`.`test123_password_data` "
+                                "(`Name of APP`, `Username`, `Password`, `URL`, `log`) "
+                                "VALUES (?, ?, ?, ?, NOW())";
+
+    // Prepare the query with the SQL statement
+    if (query.prepare(insertQueryString)) {
+        // Bind values to placeholders
+        query.addBindValue(appName);
+        query.addBindValue(username);
+        query.addBindValue(password);
+        query.addBindValue(url);
+
+        // Execute the prepared statement
+        if (query.exec()) {
+            qDebug() << "Record added successfully.";
+            refreshTable(); // Refresh the table after adding
+        } else {
+            qDebug() << "Error adding record:" << query.lastError().text();
+        }
+    } else {
+        qDebug() << "Query preparation error:" << query.lastError().text();
     }
 }
