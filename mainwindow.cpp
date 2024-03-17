@@ -19,6 +19,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+     ui->stackedWidget->setCurrentIndex(0);
         // here you are Data Base Parameters
     dataBase= QSqlDatabase::addDatabase("QMYSQL");
     dataBase.setHostName("127.0.0.1"); // @ip MySql Server
@@ -45,9 +46,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_SignUp_Button_clicked()
 {
-    hide();
-    RegisterWindow *registerWindow = new RegisterWindow(this);
-    registerWindow->show();
+     ui->stackedWidget->setCurrentIndex(1);
 
 }
 
