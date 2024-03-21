@@ -43,9 +43,21 @@ private slots:
 
     void on_LogIn_Button_clicked();
 
+    void on_Back_Button_To_Login_clicked();
+
+    void on_Register_Button_clicked();
+
+    void on_Confirm_Button_clicked();
+
+    void on_Back_Button_To_Register_clicked();
+
 private:
     Ui::MainWindow *ui;
-
+    void createDatabaseConnection();
+    void createTableAndStorePassword();
+    void generateRandomSalt(uint8_t *salt, size_t saltSize);
+    void registerUser();
+    bool isValidEmail(QString &email);
     //QSqlDatabase dataBase;
     QSqlQuery query();
     QString usernameL;

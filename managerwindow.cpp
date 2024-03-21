@@ -31,17 +31,17 @@ ManagerWindow::ManagerWindow(const QString &login_name)
 ManagerWindow::~ManagerWindow()
 {
     delete ui;
+
 }
 
 
 void ManagerWindow::on_LogOut_Button_clicked()
 {
-    hide();
+    close();
 
     // Show the MainWindow
     MainWindow *mainWindow = new MainWindow(); // Assuming MainWindow has a default constructor
     mainWindow->show();
-
 }
 
 
@@ -206,13 +206,13 @@ void ManagerWindow::on_Confirm_Button_clicked()
 
 void ManagerWindow::updateRecord(const QString &appName, const QString &username, const QString &password, const QString &url, const QString &id){
     QSqlQuery query;
-    QString updateQueryString = "UPDATE `passwordmanager`.`test123_password_data` "
-                                "SET `Name of APP` = ?, "
-                                "`Username` = ?, "
-                                "`Password` = ?, "
-                                "`URL` = ?, "
-                                "`log` = NOW() "
-                                "WHERE `ID` = ?";
+    QString updateQueryString = "UPDATE `passwordmanager`.`" + login_name + "_password_data` "
+                                                                            "SET `Name of APP` = ?, "
+                                                                            "`Username` = ?, "
+                                                                            "`Password` = ?, "
+                                                                            "`URL` = ?, "
+                                                                            "`log` = NOW() "
+                                                                            "WHERE `ID` = ?";
 
     // Prepare the query with the SQL statement
     if (query.prepare(updateQueryString)) {
@@ -237,9 +237,9 @@ void ManagerWindow::updateRecord(const QString &appName, const QString &username
 void ManagerWindow::addRecord(const QString &appName, const QString &username, const QString &password, const QString &url)
 {
     QSqlQuery query;
-    QString insertQueryString = "INSERT INTO `passwordmanager`.`test123_password_data` "
-                                "(`Name of APP`, `Username`, `Password`, `URL`, `log`) "
-                                "VALUES (?, ?, ?, ?, NOW())";
+    QString insertQueryString = "INSERT INTO `passwordmanager`.`" + login_name + "_password_data` "
+                                                                                 "(`Name of APP`, `Username`, `Password`, `URL`, `log`) "
+                                                                                 "VALUES (?, ?, ?, ?, NOW())";
 
     // Prepare the query with the SQL statement
     if (query.prepare(insertQueryString)) {
@@ -253,6 +253,7 @@ void ManagerWindow::addRecord(const QString &appName, const QString &username, c
         if (query.exec()) {
             qDebug() << "Record added successfully.";
             refreshTable(); // Refresh the table after adding
+            query.finish();
         } else {
             qDebug() << "Error adding record:" << query.lastError().text();
         }

@@ -25,9 +25,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(PasswordManageris
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        registerwindow.h registerwindow.cpp registerwindow.ui
+
         managerwindow.h managerwindow.cpp managerwindow.ui
-        encryptindialog.h encryptindialog.cpp encryptindialog.ui pictures.qrc
+        pictures.qrc
+
 
 
 
@@ -55,9 +56,7 @@ else()
 endif()
 
 
-  include_directories("C:\\Program\ Files\\MySQL\\MySQL\ Server\ 8.3\\lib")
-  include_directories("C:\\Program\ Files\\MySQL\\MySQL\ Server\ 8.3\\include")
-  include_directories("C:\\QT\\6.6.2\\Src\\qtbase\\src\\plugins\\sqldrivers\\plugins\\sqldrivers\\")
+
   include_directories("${PROJECT_FOLDER}\\libs\\argon2")
   include_directories("${PROJECT_FOLDER}\\libs\\argon2\\include")
 

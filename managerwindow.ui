@@ -712,7 +712,6 @@ gridline-color: rgb(255, 255, 255);
      <zorder>app_Line</zorder>
      <zorder>label_Password</zorder>
     </widget>
-    <widget class="QWidget" name="page_5"/>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
