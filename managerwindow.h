@@ -1,6 +1,7 @@
 #ifndef MANAGERWINDOW_H
 #define MANAGERWINDOW_H
 
+#include "mainwindow.h"
 #include "qsqlquery.h"
 #include "qsqlquerymodel.h"
 #include <QMainWindow>
@@ -14,7 +15,8 @@ class ManagerWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit ManagerWindow(const QString &login_name);
+    explicit ManagerWindow(const QString &login_name, MainWindow *mainWindow);
+
     ~ManagerWindow();
     void refreshTable();
 private slots:
@@ -38,6 +40,7 @@ private:
     QString selectedRowID;
     QSqlQuery query;
     QString ID_Column;
+    MainWindow *mainWindow;
 };
 
 #endif // MANAGERWINDOW_H

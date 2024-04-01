@@ -6,11 +6,13 @@
 #include <QSqlDatabase>
 #include <QSqlQueryModel>
 
-ManagerWindow::ManagerWindow(const QString &login_name)
+ManagerWindow::ManagerWindow(const QString &login_name,MainWindow *mainWindow)
     : QMainWindow(),
      ui(new Ui::ManagerWindow),
     login_name(login_name),
-    model(new QSqlQueryModel(this))
+    model(new QSqlQueryModel(this)),
+    mainWindow(mainWindow)
+
 
 {
 
@@ -37,11 +39,15 @@ ManagerWindow::~ManagerWindow()
 
 void ManagerWindow::on_LogOut_Button_clicked()
 {
+
     close();
 
-    // Show the MainWindow
-    MainWindow *mainWindow = new MainWindow(); // Assuming MainWindow has a default constructor
-    mainWindow->show();
+    // Show the existing MainWindow
+    if (mainWindow) {
+        mainWindow->show();
+    } else {
+        qDebug() << "Error: MainWindow instance is null.";
+    }
 }
 
 

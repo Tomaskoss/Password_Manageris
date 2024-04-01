@@ -7,13 +7,18 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+
+set(OPENSSL_ROOT_DIR "${PROJECT_FOLDER}\\libs\\openSSL_build")
+
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Sql)
-find_package(Qt6 REQUIRED COMPONENTS Core)
+find_package(Qt6 REQUIRED COMPONENTS Core )
+find_package(OpenSSL REQUIRED)
 set(PROJECT_SOURCES
         main.cpp
         mainwindow.cpp
@@ -37,6 +42,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     )
 
 
+
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET PasswordManageris APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
 #                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
@@ -57,16 +63,25 @@ endif()
 
 
 
-  include_directories("${PROJECT_FOLDER}\\libs\\argon2")
-  include_directories("${PROJECT_FOLDER}\\libs\\argon2\\include")
+    include_directories("${PROJECT_FOLDER}\\libs\\argon2")
+    include_directories("${PROJECT_FOLDER}\\libs\\argon2\\include")
+    link_directories("${PROJECT_FOLDER}\\libs\\argon2")
+    target_link_libraries(PasswordManageris PRIVATE "${PROJECT_FOLDER}\\libs\\argon2\\libargon2.a")
 
-  link_directories("${PROJECT_FOLDER}\\libs\\argon2\\")
-  target_link_libraries(PasswordManageris PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-  target_link_libraries(PasswordManageris PRIVATE Qt6::Sql)
-  target_link_libraries(PasswordManageris PRIVATE Qt6::Core)
-  target_link_libraries(PasswordManageris PRIVATE "${PROJECT_FOLDER}\\libs\\argon2\\libargon2.a")
 
-  target_compile_features(PasswordManageris PRIVATE cxx_range_for)
+    target_link_libraries(PasswordManageris PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+    target_link_libraries(PasswordManageris PRIVATE Qt6::Sql)
+    target_link_libraries(PasswordManageris PRIVATE Qt6::Core)
+
+    include_directories("${PROJECT_FOLDER}\\libs/openSSL_build\\include")
+    link_directories("${PROJECT_FOLDER}\\libs\\openSSL_build\\lib")
+    target_link_libraries(PasswordManageris PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+    target_link_libraries(PasswordManageris PRIVATE ${OPENSSL_LIBRARIES})
+
+    target_compile_features(PasswordManageris PRIVATE cxx_range_for)
+
+
+
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
 # explicit, fixed bundle identifier manually though.

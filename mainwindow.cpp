@@ -1,10 +1,15 @@
 #include "mainwindow.h"
 #include "managerwindow.h"
 #include "./ui_mainwindow.h"
-#include <qsqldatabase.h>
+#include "qsqldatabase.h"
 #include "argon2.h"
-
 #include <stdio.h>
+
+
+#include <openssl/evp.h>
+#include <openssl/sha.h>
+#include <openssl/rand.h>
+
 #include <random>
 #include <QString>
 #include <QSqlDatabase>
@@ -12,10 +17,9 @@
 #include <QDebug>
 #include <QSqlQuery>
 #include <QMessageBox>
-
 #define HASHLEN 32
 #define SALTLEN 16
-using namespace std;
+
 QSqlDatabase MainWindow::dataBase; // Initialize the static member
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -52,6 +56,10 @@ void MainWindow::on_LogIn_Button_clicked()
     setUsernameL( ui->line_username->text());
      passwordL = ui->line_password->text();
     size_t passwordL_lenght=passwordL.length();
+    QString storedSaltQString;
+    int iterations=0;
+    unsigned char generated_hash[HASHLEN];
+
 
 
     if(getUsernameL().isEmpty() || passwordL.isEmpty())
@@ -65,6 +73,9 @@ void MainWindow::on_LogIn_Button_clicked()
     if(query.exec()){
         if(query.next()){
          passwordM = query.value("Login_master_password").toString();
+         storedSaltQString= query.value("Login_salt").toString();
+         iterations = query.value("Login_iterations").toInt();
+
         } else{
             qDebug()<<"Username not found";
         }
@@ -78,6 +89,11 @@ void MainWindow::on_LogIn_Button_clicked()
     // Convert QString to const char* for passwordM
     std::string passwordM_str = passwordM.toStdString();
     const char* passwordM_char = passwordM_str.c_str();
+
+    // Convert QString to QByteArray and get the raw data
+    QByteArray saltData = storedSaltQString.toUtf8();
+    qDebug()<<"saltdata"<<saltData;
+    const unsigned char *salt = reinterpret_cast<const unsigned char *>(saltData.constData());
     if(query.exec() && query.next())
     {
        // argon2_verify(storedHashedPassword.toUtf8().constData(), password.toUtf8().constData(), password.length(),Argon2_id) == ARGON2_OK;
@@ -87,17 +103,40 @@ void MainWindow::on_LogIn_Button_clicked()
                 // Passwords match
                 qDebug() << "Login successful";
                  hide();
-                ManagerWindow *managerWindow = new ManagerWindow(usernameL);
+                ManagerWindow *managerWindow = new ManagerWindow(usernameL,this);
                 managerWindow->setAttribute(Qt::WA_DeleteOnClose); // Ensure deletion on close
                 managerWindow->setWindowFlags(Qt::Window); // Ensure appropriate window flags are set
                 managerWindow->show();
+                ui->line_password->clear();
+                ui->line_username->clear();
 
 
             }
             else
             {
                 // Passwords do not match
-                qDebug() << "Login failed";
+                qDebug()<<"iterations"<<iterations;
+                PKCS5_PBKDF2_HMAC(passwordL_char,passwordL.length(),salt,SALTLEN,iterations,EVP_sha512(),HASHLEN,generated_hash);
+                // Convert passwordM QString to QByteArray
+                QString generatedHashStr = QByteArray(reinterpret_cast<const char*>(generated_hash), HASHLEN).toHex();
+                if (generatedHashStr==passwordM_char) {
+                    // Passwords match
+                    qDebug() << "Login successful";
+                    hide();
+                    ManagerWindow *managerWindow = new ManagerWindow(usernameL,this);
+                    managerWindow->setAttribute(Qt::WA_DeleteOnClose); // Ensure deletion on close
+                    managerWindow->setWindowFlags(Qt::Window); // Ensure appropriate window flags are set
+                    managerWindow->show();
+                    ui->line_password->clear();
+                    ui->line_username->clear();
+                } else {
+                    // Password verification failed
+                     qDebug()<<"verification failed";
+                    qDebug()<<"generated hash:"<<generatedHashStr;
+                     qDebug()<<"stored hash"<<passwordM_char;
+                    qDebug()<<"stored salt"<<salt;
+                }
+
             }
         }
         else
@@ -143,6 +182,7 @@ void MainWindow::createTableAndStorePassword(){
     QSqlQuery query;
     QString database_name= usernameL;
     QString table_name= database_name+"_password_data";
+
     uint8_t salt[SALTLEN];
     generateRandomSalt(salt, SALTLEN);
     uint32_t pwdlen = passwordM.size();
@@ -185,7 +225,6 @@ void MainWindow::createTableAndStorePassword(){
                 if(query.exec()){
                     qDebug() << "Insert created successfully";
                     ui->stackedWidget->setCurrentIndex(0);
-
                 }
                 else{
                     qDebug() << "Error: " << query.lastError().text();
@@ -196,20 +235,68 @@ void MainWindow::createTableAndStorePassword(){
             return;
         }
     }
-}
-void MainWindow::generateRandomSalt(uint8_t *salt, size_t saltSize)
-{
-    const std::string CHARACTERS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<size_t> distribution(0, CHARACTERS.size() - 1);
-
-    for (size_t i = 0; i < saltSize; ++i)
-    {
-        salt[i] = CHARACTERS[distribution(gen)];
+    else if (ui->comboBox->currentText()=="PBKDF2"){
+        // Check if the MySQL driver is available
+        if (!dataBase.isOpen()) {
+            qDebug() << "Error: Failed to open database:" << dataBase.lastError().text();
+            return;
+        }
+        else {
+            qDebug() << "Opened database:" << dataBase.lastError().text();
+            query.prepare("CREATE TABLE IF NOT EXISTS `passwordmanager`.`" + table_name + "` ("
+                                                                                          "`ID` INT NOT NULL AUTO_INCREMENT,"
+                                                                                          "`Name of APP` VARCHAR(48) NULL,"
+                                                                                          "`Username` VARCHAR(48) NULL,"
+                                                                                          "`Password` VARCHAR(64) NULL,"
+                                                                                          "`URL` VARCHAR(512) NULL,"
+                                                                                          "`log` DATETIME NULL,"
+                                                                                          "PRIMARY KEY (`ID`),"
+                                                                                          "UNIQUE INDEX `ID_UNIQUE` (`ID` ASC))");
+        }
+        if (query.exec()) {
+            int iterations=600000;
+            unsigned char pwdout[HASHLEN];
+            PKCS5_PBKDF2_HMAC(passwordCString, pwdlen, salt, SALTLEN, iterations,EVP_sha512(),HASHLEN, pwdout);
+            QByteArray saltByteArray(reinterpret_cast<const char*>(salt), SALTLEN);
+            qDebug() << "pbkdf2:";
+            QString hashedPasswordString;
+            for (int i = 0; i < HASHLEN; ++i) {
+                hashedPasswordString.append(QString("%1").arg(pwdout[i], 2, 16, QLatin1Char('0')));
+            }
+            qDebug() << hashedPasswordString;
+            query.prepare("INSERT INTO `passwordmanager`.`login_information` (Login_name, Login_master_password,Login_salt,Login_iterations,Login_SALTLEN,Login_HASHLEN)"
+                          " VALUES (:username, :password, :login_salt, :login_iterations, :login_saltlen, :login_hashlen)");
+            query.bindValue(":username", usernameL);
+            query.bindValue(":password", hashedPasswordString);
+            query.bindValue(":login_iterations", iterations);
+            query.bindValue(":login_salt", saltByteArray);
+            query.bindValue(":login_saltlen", SALTLEN);
+            query.bindValue(":login_hashlen", HASHLEN);
+        }
+        if(query.exec()){
+            qDebug() << "Insert created successfully";
+            ui->stackedWidget->setCurrentIndex(0);
+        }
+        else{
+            qDebug() << "Error: " << query.lastError().text();
+        }
+    }else {
+        qDebug() << "Error: " << query.lastError().text();
     }
+    return;
 
 }
+// void generateRandomSalt(uint8_t *salt, size_t saltSize)
+// {
+//     std::random_device rd;
+//     std::mt19937_64 gen(rd());
+//     std::uniform_int_distribution<uint8_t> distribution(0, 255);
+
+//     for (size_t i = 0; i < saltSize; ++i)
+//     {
+//         salt[i] = distribution(gen);
+//     }
+// }
 void MainWindow::registerUser(){
     QSqlQuery query;
     usernameL          = ui->line_login->text();
@@ -287,5 +374,19 @@ void MainWindow::createDatabaseConnection(){
         qDebug() << "Error: Failed to open database:" << dataBase.lastError().text();
     }
     else{qDebug() << "Database opened successfully";}
+
+}
+
+void MainWindow::generateRandomSalt(uint8_t *salt, size_t saltSize)
+{
+    const std::string CHARACTERS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<size_t> distribution(0, CHARACTERS.size() - 1);
+
+    for (size_t i = 0; i < saltSize; ++i)
+    {
+        salt[i] = CHARACTERS[distribution(gen)];
+    }
 
 }
