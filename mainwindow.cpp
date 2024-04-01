@@ -9,6 +9,7 @@
 #include <openssl/evp.h>
 #include <openssl/sha.h>
 #include <openssl/rand.h>
+#include <openssl/err.h>
 
 #include <random>
 #include <QString>
@@ -53,13 +54,14 @@ void MainWindow::on_Quit_Button_clicked()
 
 void MainWindow::on_LogIn_Button_clicked()
 {
+
     setUsernameL( ui->line_username->text());
      passwordL = ui->line_password->text();
     size_t passwordL_lenght=passwordL.length();
     QString storedSaltQString;
     int iterations=0;
     unsigned char generated_hash[HASHLEN];
-
+    QString algorithm_type;
 
 
     if(getUsernameL().isEmpty() || passwordL.isEmpty())
@@ -75,6 +77,7 @@ void MainWindow::on_LogIn_Button_clicked()
          passwordM = query.value("Login_master_password").toString();
          storedSaltQString= query.value("Login_salt").toString();
          iterations = query.value("Login_iterations").toInt();
+         algorithm_type = query.value("Kdf_algorithm").toString();
 
         } else{
             qDebug()<<"Username not found";
@@ -85,18 +88,17 @@ void MainWindow::on_LogIn_Button_clicked()
     // Convert QString to const char* for passwordL
     std::string passwordL_str = passwordL.toStdString();
     const char* passwordL_char = passwordL_str.c_str();
-
     // Convert QString to const char* for passwordM
     std::string passwordM_str = passwordM.toStdString();
     const char* passwordM_char = passwordM_str.c_str();
 
     // Convert QString to QByteArray and get the raw data
     QByteArray saltData = storedSaltQString.toUtf8();
-    qDebug()<<"saltdata"<<saltData;
+
     const unsigned char *salt = reinterpret_cast<const unsigned char *>(saltData.constData());
     if(query.exec() && query.next())
     {
-       // argon2_verify(storedHashedPassword.toUtf8().constData(), password.toUtf8().constData(), password.length(),Argon2_id) == ARGON2_OK;
+        if(algorithm_type=="Argon2id"){
            int verificationResult =argon2id_verify(passwordM_char,passwordL_char,passwordL_lenght);
             if (verificationResult == ARGON2_OK)
             {
@@ -109,13 +111,10 @@ void MainWindow::on_LogIn_Button_clicked()
                 managerWindow->show();
                 ui->line_password->clear();
                 ui->line_username->clear();
-
-
             }
-            else
-            {
+        }
+        else if (algorithm_type=="PBKDF2"){
                 // Passwords do not match
-                qDebug()<<"iterations"<<iterations;
                 PKCS5_PBKDF2_HMAC(passwordL_char,passwordL.length(),salt,SALTLEN,iterations,EVP_sha512(),HASHLEN,generated_hash);
                 // Convert passwordM QString to QByteArray
                 QString generatedHashStr = QByteArray(reinterpret_cast<const char*>(generated_hash), HASHLEN).toHex();
@@ -129,24 +128,16 @@ void MainWindow::on_LogIn_Button_clicked()
                     managerWindow->show();
                     ui->line_password->clear();
                     ui->line_username->clear();
-                } else {
-                    // Password verification failed
-                     qDebug()<<"verification failed";
-                    qDebug()<<"generated hash:"<<generatedHashStr;
-                     qDebug()<<"stored hash"<<passwordM_char;
-                    qDebug()<<"stored salt"<<salt;
+                    qDebug()<<"variables "<<usernameL<<passwordM_char<<passwordL_char<<passwordL_str<<passwordM_str<<salt<<generated_hash<<iterations;
                 }
+                else{
+                    qDebug()<<"Wrong password";
+                }
+        }else if (algorithm_type=="Scrypt"){
 
-            }
         }
-        else
-        {
-            // Handle query execution failure or no matching user
-            qDebug() << "Login query failed:" << query.lastError().text();
-        }
-
+       }
 }
-
 void MainWindow::setUsernameL(const QString& username)
 {
     usernameL = username;
@@ -179,113 +170,17 @@ void MainWindow::on_Confirm_Button_clicked()
 }
 
 void MainWindow::createTableAndStorePassword(){
-    QSqlQuery query;
-    QString database_name= usernameL;
-    QString table_name= database_name+"_password_data";
 
-    uint8_t salt[SALTLEN];
-    generateRandomSalt(salt, SALTLEN);
-    uint32_t pwdlen = passwordM.size();
-    uint32_t t_cost = 2;            // 2-pass computation
-    uint32_t m_cost = (1<<16);      // 64 mebibytes memory usage
-    uint32_t parallelism = 1;       // number of threads and lanes
-    char encodedPasswordHash[HASHLEN*8 +1];
-    std::string passwordString = passwordM.toStdString();
-    const char* passwordCString = passwordString.c_str();
-    qDebug()<<passwordCString;
-    qDebug()<<"Print current selected"<<ui->comboBox->currentText();
     if(ui->comboBox->currentText()=="Argon2id"){
-        // Check if the MySQL driver is available
-        if (!dataBase.isOpen()) {
-            qDebug() << "Error: Failed to open database:" << dataBase.lastError().text();
-            return;
-        }
-        else {
-            qDebug() << "openned database:" << dataBase.lastError().text();
-            // Prepare the SQL query with placeholders
-            query.prepare("CREATE TABLE IF NOT EXISTS `passwordmanager`.`" + table_name + "` ("
-                                                                                          "`ID` INT NOT NULL AUTO_INCREMENT,"
-                                                                                          "`Name of APP` VARCHAR(48) NULL,"
-                                                                                          "`Username` VARCHAR(48) NULL,"
-                                                                                          "`Password` VARCHAR(64) NULL,"
-                                                                                          "`URL` VARCHAR(512) NULL,"
-                                                                                          "`log` DATETIME NULL,"
-                                                                                          "PRIMARY KEY (`ID`),"
-                                                                                          "UNIQUE INDEX `ID_UNIQUE` (`ID` ASC))");
-            // Execute the prepared statement
-            if (query.exec()) {
-                argon2id_hash_encoded(t_cost, m_cost, parallelism, passwordCString, pwdlen, salt, SALTLEN, HASHLEN, encodedPasswordHash, sizeof(encodedPasswordHash));
-                qDebug() << "argon2idHash:"<<encodedPasswordHash;
-                QString storedPasswordQString = QString::fromUtf8(encodedPasswordHash);
-                qDebug() << "Table created successfully";
-                query.prepare("INSERT INTO `passwordmanager`.`login_information` (Login_name, Login_master_password) VALUES (:username, :password)");
-                query.bindValue(":username", usernameL);
-                query.bindValue(":password", storedPasswordQString);
-                //query.bindValue(":salt", hexSalt);
-                if(query.exec()){
-                    qDebug() << "Insert created successfully";
-                    ui->stackedWidget->setCurrentIndex(0);
-                }
-                else{
-                    qDebug() << "Error: " << query.lastError().text();
-                }
-            } else {
-                qDebug() << "Error: " << query.lastError().text();
-            }
-            return;
-        }
-    }
-    else if (ui->comboBox->currentText()=="PBKDF2"){
-        // Check if the MySQL driver is available
-        if (!dataBase.isOpen()) {
-            qDebug() << "Error: Failed to open database:" << dataBase.lastError().text();
-            return;
-        }
-        else {
-            qDebug() << "Opened database:" << dataBase.lastError().text();
-            query.prepare("CREATE TABLE IF NOT EXISTS `passwordmanager`.`" + table_name + "` ("
-                                                                                          "`ID` INT NOT NULL AUTO_INCREMENT,"
-                                                                                          "`Name of APP` VARCHAR(48) NULL,"
-                                                                                          "`Username` VARCHAR(48) NULL,"
-                                                                                          "`Password` VARCHAR(64) NULL,"
-                                                                                          "`URL` VARCHAR(512) NULL,"
-                                                                                          "`log` DATETIME NULL,"
-                                                                                          "PRIMARY KEY (`ID`),"
-                                                                                          "UNIQUE INDEX `ID_UNIQUE` (`ID` ASC))");
-        }
-        if (query.exec()) {
-            int iterations=600000;
-            unsigned char pwdout[HASHLEN];
-            PKCS5_PBKDF2_HMAC(passwordCString, pwdlen, salt, SALTLEN, iterations,EVP_sha512(),HASHLEN, pwdout);
-            QByteArray saltByteArray(reinterpret_cast<const char*>(salt), SALTLEN);
-            qDebug() << "pbkdf2:";
-            QString hashedPasswordString;
-            for (int i = 0; i < HASHLEN; ++i) {
-                hashedPasswordString.append(QString("%1").arg(pwdout[i], 2, 16, QLatin1Char('0')));
-            }
-            qDebug() << hashedPasswordString;
-            query.prepare("INSERT INTO `passwordmanager`.`login_information` (Login_name, Login_master_password,Login_salt,Login_iterations,Login_SALTLEN,Login_HASHLEN)"
-                          " VALUES (:username, :password, :login_salt, :login_iterations, :login_saltlen, :login_hashlen)");
-            query.bindValue(":username", usernameL);
-            query.bindValue(":password", hashedPasswordString);
-            query.bindValue(":login_iterations", iterations);
-            query.bindValue(":login_salt", saltByteArray);
-            query.bindValue(":login_saltlen", SALTLEN);
-            query.bindValue(":login_hashlen", HASHLEN);
-        }
-        if(query.exec()){
-            qDebug() << "Insert created successfully";
-            ui->stackedWidget->setCurrentIndex(0);
-        }
-        else{
-            qDebug() << "Error: " << query.lastError().text();
-        }
-    }else {
-        qDebug() << "Error: " << query.lastError().text();
-    }
-    return;
+        Argon_KDF();}
 
-}
+    else if (ui->comboBox->currentText()=="PBKDF2"){
+        PBKDF2_KDF();
+    }
+    else if(ui->comboBox->currentText()=="Scrypt"){
+        Scrypt_KDF();
+        }
+ }
 // void generateRandomSalt(uint8_t *salt, size_t saltSize)
 // {
 //     std::random_device rd;
@@ -296,7 +191,7 @@ void MainWindow::createTableAndStorePassword(){
 //     {
 //         salt[i] = distribution(gen);
 //     }
-// }
+
 void MainWindow::registerUser(){
     QSqlQuery query;
     usernameL          = ui->line_login->text();
@@ -389,4 +284,187 @@ void MainWindow::generateRandomSalt(uint8_t *salt, size_t saltSize)
         salt[i] = CHARACTERS[distribution(gen)];
     }
 
+}
+
+void MainWindow::Argon_KDF(){
+    QSqlQuery query;
+    QString database_name= usernameL;
+    QString table_name= database_name+"_password_data";
+    QString algorithm_type;
+    uint8_t salt[SALTLEN];
+    generateRandomSalt(salt, SALTLEN);
+    uint32_t pwdlen = passwordM.size();
+    uint32_t t_cost = 2;            // 2-pass computation
+    uint32_t m_cost = (1<<16);      // 64 mebibytes memory usage
+    uint32_t parallelism = 1;       // number of threads and lanes
+    char encodedPasswordHash[HASHLEN*8 +1];
+    std::string passwordString = passwordM.toStdString();
+    const char* passwordCString = passwordString.c_str();
+    algorithm_type=ui->comboBox->currentText();
+            // Check if the MySQL driver is available
+            if (!dataBase.isOpen()) {
+                qDebug() << "Error: Failed to open database:" << dataBase.lastError().text();
+                return;
+            }
+            else {
+                qDebug() << "openned database:" << dataBase.lastError().text();
+                // Prepare the SQL query with placeholders
+                query.prepare("CREATE TABLE IF NOT EXISTS `passwordmanager`.`" + table_name + "` ("
+                                                                                              "`ID` INT NOT NULL AUTO_INCREMENT,"
+                                                                                              "`Name of APP` VARCHAR(48) NULL,"
+                                                                                              "`Username` VARCHAR(48) NULL,"
+                                                                                              "`Password` VARCHAR(64) NULL,"
+                                                                                              "`URL` VARCHAR(512) NULL,"
+                                                                                              "`log` DATETIME NULL,"
+                                                                                              "PRIMARY KEY (`ID`))");
+                // Execute the prepared statement
+                if (query.exec()) {
+                    argon2id_hash_encoded(t_cost, m_cost, parallelism, passwordCString, pwdlen, salt, SALTLEN, HASHLEN, encodedPasswordHash, sizeof(encodedPasswordHash));
+                    qDebug() << "argon2idHash:"<<encodedPasswordHash;
+                    QString storedPasswordQString = QString::fromUtf8(encodedPasswordHash);
+                    qDebug() << "Table created successfully";
+                    query.prepare("INSERT INTO `passwordmanager`.`login_information` (Login_name, Login_master_password,Kdf_algorithm) VALUES (:username, :password, :algorithm_type)");
+                    query.bindValue(":username", usernameL);
+                    query.bindValue(":password", storedPasswordQString);
+                    query.bindValue(":algorithm_type",algorithm_type);
+                    //query.bindValue(":salt", hexSalt);
+                    if(query.exec()){
+                        qDebug() << "Insert created successfully";
+                        ui->stackedWidget->setCurrentIndex(0);
+                    }
+                    else{
+                        qDebug() << "Error: " << query.lastError().text();
+                    }
+                } else {
+                    qDebug() << "Error: " << query.lastError().text();
+                }
+                return;
+            }
+}
+
+void MainWindow::PBKDF2_KDF(){
+
+    QSqlQuery query;
+    QString database_name= usernameL;
+    QString table_name= database_name+"_password_data";
+    QString algorithm_type;
+    uint32_t pwdlen = passwordM.size();
+    uint8_t salt[SALTLEN];
+    generateRandomSalt(salt, SALTLEN);
+    std::string passwordString = passwordM.toStdString();
+    const char* passwordCString = passwordString.c_str();
+    algorithm_type=ui->comboBox->currentText();
+        if (!dataBase.isOpen()) {
+            qDebug() << "Error: Failed to open database:" << dataBase.lastError().text();
+            return;
+        }
+        else {
+            qDebug() << "Opened database:" << dataBase.lastError().text();
+            query.prepare("CREATE TABLE IF NOT EXISTS `passwordmanager`.`" + table_name + "` ("
+                                                                                          "`ID` INT NOT NULL AUTO_INCREMENT,"
+                                                                                          "`Name of APP` VARCHAR(48) NULL,"
+                                                                                          "`Username` VARCHAR(48) NULL,"
+                                                                                          "`Password` VARCHAR(64) NULL,"
+                                                                                          "`URL` VARCHAR(512) NULL,"
+                                                                                          "`log` DATETIME NULL,"
+                                                                                          "PRIMARY KEY (`ID`))");
+        }
+        if (query.exec()) {
+            int iterations=600000;
+            unsigned char pwdout[HASHLEN];
+            PKCS5_PBKDF2_HMAC(passwordCString, pwdlen, salt, SALTLEN, iterations,EVP_sha512(),HASHLEN, pwdout);
+            QByteArray saltByteArray(reinterpret_cast<const char*>(salt), SALTLEN);
+            qDebug() << "pbkdf2:";
+            QString hashedPasswordString;
+            for (int i = 0; i < HASHLEN; ++i) {
+                hashedPasswordString.append(QString("%1").arg(pwdout[i], 2, 16, QLatin1Char('0')));
+            }
+            qDebug() << hashedPasswordString;
+            query.prepare("INSERT INTO `passwordmanager`.`login_information` (Login_name, Login_master_password,Login_salt,Login_iterations,Login_SALTLEN,Login_HASHLEN,Kdf_algorithm)"
+                          " VALUES (:username, :password, :login_salt, :login_iterations, :login_saltlen, :login_hashlen, :algorithm_type)");
+            query.bindValue(":username", usernameL);
+            query.bindValue(":password", hashedPasswordString);
+            query.bindValue(":login_iterations", iterations);
+            query.bindValue(":login_salt", saltByteArray);
+            query.bindValue(":login_saltlen", SALTLEN);
+            query.bindValue(":login_hashlen", HASHLEN);
+            query.bindValue(":algorithm_type",algorithm_type);
+        }
+        if(query.exec()){
+            qDebug() << "Insert created successfully";
+            ui->stackedWidget->setCurrentIndex(0);
+        }
+        else{
+            qDebug() << "Error: " << query.lastError().text();
+        }
+}
+
+void MainWindow::Scrypt_KDF(){
+
+    QSqlQuery query;
+    QString database_name= usernameL;
+    QString table_name= database_name+"_password_data";
+    QString algorithm_type;
+    uint8_t salt[SALTLEN];
+    generateRandomSalt(salt, SALTLEN);
+    uint32_t pwdlen = passwordM.size();
+    // Define named constants for parameters
+    constexpr uint64_t N_ITERATIONS = 2048;
+    constexpr uint64_t BLOCK_SIZE = 1;
+    constexpr uint64_t PARALLELISM_FACTOR = 1;
+    constexpr uint64_t MAX_MEMORY = 1024 * 1024;
+    const uint64_t N = N_ITERATIONS;
+    const uint64_t r = BLOCK_SIZE;
+    const uint64_t p = PARALLELISM_FACTOR;
+    const uint64_t maxmemory = MAX_MEMORY;
+    unsigned char pwdout[HASHLEN];
+    std::string passwordString = passwordM.toStdString();
+    const char* passwordCString = passwordString.c_str();
+    algorithm_type=ui->comboBox->currentText();
+    int result=0;
+     result = EVP_PBE_scrypt(passwordCString, pwdlen, salt, SALTLEN, N, r, p, maxmemory, pwdout, HASHLEN);
+    if (result != 1) {
+        qDebug()<<ERR_get_error();
+        qDebug() << "Error: EVP_PBE_scrypt failed with code" << result;
+        return ;
+    }
+    QByteArray saltByteArray(reinterpret_cast<const char*>(salt), SALTLEN);
+    QString hashedPasswordString;
+    for (int i = 0; i < HASHLEN; ++i) {
+        hashedPasswordString.append(QString("%1").arg(pwdout[i], 2, 16, QLatin1Char('0')));
+    }
+    qDebug()<<"hasshed string"<< hashedPasswordString;
+    query.prepare("CREATE TABLE IF NOT EXISTS `passwordmanager`.`" + table_name + "` ("
+                                                                                  "`ID` INT NOT NULL AUTO_INCREMENT,"
+                                                                                  "`Name of APP` VARCHAR(48) NULL,"
+                                                                                  "`Username` VARCHAR(48) NULL,"
+                                                                                  "`Password` VARCHAR(64) NULL,"
+                                                                                  "`URL` VARCHAR(512) NULL,"
+                                                                                  "`log` DATETIME NULL,"
+                                                                                  "PRIMARY KEY (`ID`))");
+
+    if (query.exec()) {
+        query.prepare("INSERT INTO `passwordmanager`.`login_information` (Login_name, Login_master_password, Login_salt, Login_iterations, Login_r, Login_p, Login_maxmemory, Login_SALTLEN, Login_HASHLEN, Kdf_algorithm)"
+                      " VALUES (:username, :password, :login_salt, :login_iterations, :login_r, :login_p, :login_maxmemory, :login_saltlen, :login_hashlen, :algorithm_type)");
+        query.bindValue(":username", usernameL);
+        query.bindValue(":password", hashedPasswordString);
+        query.bindValue(":login_salt", saltByteArray);
+        query.bindValue(":login_iterations", N);
+        query.bindValue(":login_r", r);
+        query.bindValue(":login_p", p);
+        query.bindValue(":login_maxmemory", maxmemory);
+        query.bindValue(":login_saltlen", SALTLEN);
+        query.bindValue(":login_hashlen", HASHLEN);
+        query.bindValue(":algorithm_type", algorithm_type);
+
+        if(query.exec()){
+            qDebug() << "Insert created successfully";
+            ui->stackedWidget->setCurrentIndex(0);
+        }
+        else{
+            qDebug() << "Error: " << query.lastError().text();
+        }
+    } else {
+        qDebug() << "Error: " << query.lastError().text();
+    }
 }

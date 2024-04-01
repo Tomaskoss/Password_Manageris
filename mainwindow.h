@@ -53,16 +53,21 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+    void PBKDF2_KDF();
+    void Scrypt_KDF();
     void createDatabaseConnection();
     void createTableAndStorePassword();
     void generateRandomSalt(uint8_t *salt, size_t saltSize);
     void registerUser();
+    void clearData();
+    void Argon_KDF();
     bool isValidEmail(QString &email);
     //QSqlDatabase dataBase;
     QSqlQuery query();
     QString usernameL;
     QString passwordL;
     QString passwordM;
+
 };
 
 
