@@ -62,6 +62,7 @@ void MainWindow::on_LogIn_Button_clicked()
     int iterations=0;
     unsigned char generated_hash[HASHLEN];
     QString algorithm_type;
+    int r_BLOCK_SIZE,p_PARALLELISM_FACTOR ,MAX_MEMORY;
 
 
     if(getUsernameL().isEmpty() || passwordL.isEmpty())
@@ -78,7 +79,9 @@ void MainWindow::on_LogIn_Button_clicked()
          storedSaltQString= query.value("Login_salt").toString();
          iterations = query.value("Login_iterations").toInt();
          algorithm_type = query.value("Kdf_algorithm").toString();
-
+         r_BLOCK_SIZE = query.value("Login_r").toInt();
+         p_PARALLELISM_FACTOR = query.value("Login_p").toInt();
+         MAX_MEMORY= query.value("Login_maxmemory").toInt();
         } else{
             qDebug()<<"Username not found";
         }
@@ -134,9 +137,25 @@ void MainWindow::on_LogIn_Button_clicked()
                     qDebug()<<"Wrong password";
                 }
         }else if (algorithm_type=="Scrypt"){
-
+              int result = EVP_PBE_scrypt(passwordL_char, passwordL_lenght, salt, SALTLEN, iterations, r_BLOCK_SIZE, p_PARALLELISM_FACTOR, MAX_MEMORY, generated_hash, HASHLEN);
+             QString generatedHashStr = QByteArray(reinterpret_cast<const char*>(generated_hash), HASHLEN).toHex();
+                if(generatedHashStr==passwordM_char){
+                     // Passwords match
+                     qDebug() << "Login successful";
+                     hide();
+                     ManagerWindow *managerWindow = new ManagerWindow(usernameL,this);
+                     managerWindow->setAttribute(Qt::WA_DeleteOnClose); // Ensure deletion on close
+                     managerWindow->setWindowFlags(Qt::Window); // Ensure appropriate window flags are set
+                     managerWindow->show();
+                     ui->line_password->clear();
+                     ui->line_username->clear();
+                     qDebug()<<"variables "<<usernameL<<passwordM_char<<passwordL_char<<passwordL_str<<passwordM_str<<salt<<generated_hash<<iterations;
+                }
+                else{
+                    qDebug()<<"Wrong password";
+            }
         }
-       }
+    }
 }
 void MainWindow::setUsernameL(const QString& username)
 {
