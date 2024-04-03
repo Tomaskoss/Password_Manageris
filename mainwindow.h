@@ -25,14 +25,6 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     static QSqlDatabase dataBase;
-    void setUsernameL(const QString& username);
-    QString getUsernameL() const;
-
-    void setPasswordL(const QString& password);
-    QString getPasswordL() const;
-
-    void setPasswordM(const QString& password);
-    QString getPasswordM() const;
 
 
 
@@ -53,9 +45,12 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+    void sendEmail(const QString &totp, const QString &recipientEmail);
+    void GenerateTOTP();
     void PBKDF2_KDF();
     void Scrypt_KDF();
     void createDatabaseConnection();
+    void establishEncryptedConnection(const QString& serverAddress, quint16 serverPort);
     void createTableAndStorePassword();
     void generateRandomSalt(uint8_t *salt, size_t saltSize);
     void registerUser();
@@ -67,6 +62,7 @@ private:
     QString usernameL;
     QString passwordL;
     QString passwordM;
+    uint8_t salt[];
 
 };
 

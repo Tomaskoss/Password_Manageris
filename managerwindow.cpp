@@ -6,19 +6,55 @@
 #include <QSqlDatabase>
 #include <QSqlQueryModel>
 
+#include <QStyledItemDelegate>
+#include "openssl/evp.h"
+
+bool passwordsVisible = false;
+class PasswordDelegate : public QStyledItemDelegate {
+
+public:
+    PasswordDelegate(QObject *parent = nullptr) : QStyledItemDelegate(parent) {}
+
+    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const {
+        if (index.column() == 3) { // Assuming password column is at index 3
+            QString password = index.data(Qt::DisplayRole).toString();
+
+            // Check if passwords are currently visible
+            if (!passwordsVisible) {
+                // If passwords are not visible, obscure them
+                password = QString(password.length(), '*');
+            }
+
+            // Get the widget associated with the painter
+            const QWidget *widget = option.widget;
+            if (widget) {
+                // Draw the password data using the style associated with the widget
+                QStyleOptionViewItem opt = option;
+                opt.text = password;
+                const_cast<QWidget *>(widget)->style()->drawControl(QStyle::CE_ItemViewItem, &opt, painter, widget);
+            }
+        } else {
+            // For other columns, use default painting
+            QStyledItemDelegate::paint(painter, option, index);
+        }
+    }
+};
+
+
+
+
 ManagerWindow::ManagerWindow(const QString &login_name,MainWindow *mainWindow)
     : QMainWindow(),
      ui(new Ui::ManagerWindow),
     login_name(login_name),
     model(new QSqlQueryModel(this)),
     mainWindow(mainWindow)
-
-
 {
-
     ui->setupUi(this);
     setWindowFlags(windowFlags() | Qt::Window);
     ui->stackedWidget->setCurrentIndex(0);
+
+
     query.prepare("SELECT * FROM `passwordmanager`.`"+login_name+"_password_data`");
     if (query.exec()) {
         model->setQuery(std::move(query));
@@ -53,9 +89,11 @@ void ManagerWindow::on_LogOut_Button_clicked()
 
 void ManagerWindow::on_actionAdd_triggered()
 {
+        selectedRowID.clear();
+        ui->stackedWidget->setCurrentIndex(1); // Change the index to 1
 
-    ui->stackedWidget->setCurrentIndex(1);
-    selectedRowID.clear();
+
+
 
 
 }
@@ -89,10 +127,15 @@ void ManagerWindow::refreshTable() {
             // Hide the column containing the row IDs
             ui->tableView->hideColumn(0);
             // Set the width of the header to x pixels
+            // ui->tableView->setItemDelegateForColumn(3,);
             ui->tableView->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
             ui->tableView->horizontalHeader()->resizeSection(3, 350);
             ui->tableView->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
             ui->tableView->horizontalHeader()->resizeSection(2, 150);
+            // Set the custom delegate for the password column
+            PasswordDelegate *passwordDelegate = new PasswordDelegate(this);
+            ui->tableView->setItemDelegateForColumn(3, passwordDelegate); // A
+
         } else {
             qDebug() << "Query execution error:" << query.lastError().text();
         }
@@ -103,6 +146,9 @@ void ManagerWindow::refreshTable() {
 
 void ManagerWindow::on_actionRemove_triggered()
 {
+
+    if (!selectedRowID.isEmpty()) { // Check if a row is selected
+
 
 
      QSqlQuery query;
@@ -127,9 +173,12 @@ void ManagerWindow::on_actionRemove_triggered()
     } else {
         qDebug() << "Query preparation error:" << query.lastError().text();
     }
-
+    selectedRowID.clear();
+    }
+    else{
+        qDebug()<<"no selected row"<<selectedRowID;
+    }
 }
-
 void ManagerWindow::on_tableView_clicked(const QModelIndex &index)
 {
     // Retrieve the ID of the row
@@ -176,15 +225,19 @@ void ManagerWindow::resetAutoIncrementAndReindex()
 
 void ManagerWindow::on_actionChange_triggered()
 {
-
-    ui->stackedWidget->setCurrentIndex(1);
+    if (!selectedRowID.isEmpty()) { // Check if a row is selected
+        ui->stackedWidget->setCurrentIndex(1); // Change the index to 1
+    }
+    else{
+        qDebug()<<"no row selected"<<selectedRowID;
+    }
 }
 
 
 void ManagerWindow::on_Back_Button_clicked()
 {
     ui->stackedWidget->setCurrentIndex(0);
-
+    clearData();
 }
 
 
@@ -206,6 +259,7 @@ void ManagerWindow::on_Confirm_Button_clicked()
     else{
         updateRecord(appName, username, password, url,  id);
     }
+    clearData();
     refreshTable();
 
 }
@@ -260,10 +314,45 @@ void ManagerWindow::addRecord(const QString &appName, const QString &username, c
             qDebug() << "Record added successfully.";
             refreshTable(); // Refresh the table after adding
             query.finish();
+
         } else {
             qDebug() << "Error adding record:" << query.lastError().text();
         }
     } else {
         qDebug() << "Query preparation error:" << query.lastError().text();
     }
+}
+
+
+void ManagerWindow::on_show_Password_Button_clicked()
+{
+    passwordsVisible = !passwordsVisible;
+    // Refresh the table view to reflect the updated visibility
+    ui->tableView->viewport()->update();
+}
+
+
+void ManagerWindow::on_show_Password_Edit_Button_clicked()
+{
+    // Toggle the visibility of passwords
+    passwordsVisible = !passwordsVisible;
+
+    if (passwordsVisible) {
+        // If passwords are now visible, set echo mode to Normal
+        ui->password_Line->setEchoMode(QLineEdit::Normal);
+    } else {
+        // If passwords are not visible, set echo mode to Password
+        ui->password_Line->setEchoMode(QLineEdit::Password);
+    }
+}
+
+void ManagerWindow::clearData(){
+    ui->password_Line->clear();
+    ui->URL_Line->clear();
+    ui->username_Line->clear();
+    ui->app_Line->clear();
+}
+
+void ManagerWindow::aes_GCM_ENCRYPT(){
+
 }

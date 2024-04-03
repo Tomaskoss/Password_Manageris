@@ -12,13 +12,18 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
 set(OPENSSL_ROOT_DIR "${PROJECT_FOLDER}\\libs\\openSSL_build")
-
+set(qotp_DIR "${PROJECT_FOLDER}\\libs\\qotp-main\\qotp_build\\CMakeFiles")
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Sql)
 find_package(Qt6 REQUIRED COMPONENTS Core )
 find_package(OpenSSL REQUIRED)
+
+
+
+
+# find_package (qotp REQUIRED)
 set(PROJECT_SOURCES
         main.cpp
         mainwindow.cpp
@@ -34,12 +39,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         managerwindow.h managerwindow.cpp managerwindow.ui
         pictures.qrc
 
-
-
-
-
-
     )
+
 
 
 
@@ -69,14 +70,31 @@ endif()
     target_link_libraries(PasswordManageris PRIVATE "${PROJECT_FOLDER}\\libs\\argon2\\libargon2.a")
 
 
+
     target_link_libraries(PasswordManageris PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
     target_link_libraries(PasswordManageris PRIVATE Qt6::Sql)
     target_link_libraries(PasswordManageris PRIVATE Qt6::Core)
 
+
+    target_link_libraries(PasswordManageris PRIVATE ${qotp_LIBRARIES})
+    include_directories("${PROJECT_FOLDER}\\libs\\qotp-main\\install\\include")
+    include_directories("${PROJECT_FOLDER}\\libs\\qotp-main\\install")
+    link_directories("${PROJECT_FOLDER}\\libs\\qotp-main\\install\\lib")
+    target_link_libraries(PasswordManageris PRIVATE "${PROJECT_FOLDER}\\libs\\qotp-main\\install\\lib\\liblibqotp.a")
+
     include_directories("${PROJECT_FOLDER}\\libs/openSSL_build\\include")
+
     link_directories("${PROJECT_FOLDER}\\libs\\openSSL_build\\lib")
+
     target_link_libraries(PasswordManageris PRIVATE OpenSSL::SSL OpenSSL::Crypto)
     target_link_libraries(PasswordManageris PRIVATE ${OPENSSL_LIBRARIES})
+
+
+    include_directories("${PROJECT_FOLDER}\\libs\\QtSmtpMime")
+    include_directories("${PROJECT_FOLDER}\\libs\\QtSmtpMime\\include\\smtpmime")
+    link_libraries("${PROJECT_FOLDER}\\libs\\QtSmtpMime\\bin")
+    target_link_libraries(PasswordManageris PRIVATE "${PROJECT_FOLDER}\\libs\\QtSmtpMime\\bin\\libQtSmtpMime.dll")
+
 
     target_compile_features(PasswordManageris PRIVATE cxx_range_for)
 

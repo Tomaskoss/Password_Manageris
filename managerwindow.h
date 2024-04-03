@@ -30,9 +30,14 @@ private slots:
     void on_Back_Button_clicked();
     void on_Confirm_Button_clicked();
 
-private:
-    void addRecord(const QString &appName, const QString &username, const QString &password, const QString &url);
+    void on_show_Password_Button_clicked();
 
+    void on_show_Password_Edit_Button_clicked();
+
+private:
+    void aes_GCM_ENCRYPT();
+    void addRecord(const QString &appName, const QString &username, const QString &password, const QString &url);
+    void clearData();
     void updateRecord(const QString &appName, const QString &username, const QString &password, const QString &url, const QString &id);
     Ui::ManagerWindow *ui;
     QString login_name;

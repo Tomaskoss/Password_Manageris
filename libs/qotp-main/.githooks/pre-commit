@@ -1,0 +1,16 @@
+#!/bin/sh
+
+for script in "$(dirname "$0")"/pre-commit-scripts/*.sh; do
+  # If the script file is not executable, make it so
+  if [ ! -x "$script" ]; then
+    chmod +x "$script"
+  fi
+
+  # Run the script and check its exit status
+  sh "$script"
+  if [ $? -ne 0 ]; then
+    exit 1
+  fi
+done
+
+exit 0

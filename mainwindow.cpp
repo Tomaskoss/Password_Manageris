@@ -3,15 +3,24 @@
 #include "./ui_mainwindow.h"
 #include "qsqldatabase.h"
 #include "argon2.h"
+#include <iostream>
 #include <stdio.h>
+
 
 
 #include <openssl/evp.h>
 #include <openssl/sha.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>
+#include <openssl/hmac.h>
 
-#include <random>
+#include <libqotp/qotp.h>
+
+
+#include <include/smtpmime/smtpclient.h>
+#include <include/smtpmime/mimemessage.h>
+#include <include/smtpmime/mimetext.h>
+
 #include <QString>
 #include <QSqlDatabase>
 #include <QSqlError>
@@ -54,29 +63,30 @@ void MainWindow::on_Quit_Button_clicked()
 
 void MainWindow::on_LogIn_Button_clicked()
 {
+    GenerateTOTP();
 
-    setUsernameL( ui->line_username->text());
+     usernameL= ui->line_username->text();
      passwordL = ui->line_password->text();
     size_t passwordL_lenght=passwordL.length();
-    QString storedSaltQString;
+    QByteArray storedSaltQString;
     int iterations=0;
     unsigned char generated_hash[HASHLEN];
     QString algorithm_type;
     int r_BLOCK_SIZE,p_PARALLELISM_FACTOR ,MAX_MEMORY;
 
 
-    if(getUsernameL().isEmpty() || passwordL.isEmpty())
+    if(usernameL.isEmpty() || passwordL.isEmpty())
     {
         ui->status_message_log->setText("Username or password is blank");
         return;
     }
     QSqlQuery query;
     query.prepare("SELECT * FROM `passwordmanager`.`login_information` WHERE Login_name = :username");
-    query.bindValue(":username", getUsernameL());
+    query.bindValue(":username", usernameL);
     if(query.exec()){
         if(query.next()){
          passwordM = query.value("Login_master_password").toString();
-         storedSaltQString= query.value("Login_salt").toString();
+         storedSaltQString= query.value("Login_salt").toByteArray();
          iterations = query.value("Login_iterations").toInt();
          algorithm_type = query.value("Kdf_algorithm").toString();
          r_BLOCK_SIZE = query.value("Login_r").toInt();
@@ -96,7 +106,7 @@ void MainWindow::on_LogIn_Button_clicked()
     const char* passwordM_char = passwordM_str.c_str();
 
     // Convert QString to QByteArray and get the raw data
-    QByteArray saltData = storedSaltQString.toUtf8();
+    QByteArray saltData = storedSaltQString;
 
     const unsigned char *salt = reinterpret_cast<const unsigned char *>(saltData.constData());
     if(query.exec() && query.next())
@@ -139,35 +149,29 @@ void MainWindow::on_LogIn_Button_clicked()
         }else if (algorithm_type=="Scrypt"){
               int result = EVP_PBE_scrypt(passwordL_char, passwordL_lenght, salt, SALTLEN, iterations, r_BLOCK_SIZE, p_PARALLELISM_FACTOR, MAX_MEMORY, generated_hash, HASHLEN);
              QString generatedHashStr = QByteArray(reinterpret_cast<const char*>(generated_hash), HASHLEN).toHex();
-                if(generatedHashStr==passwordM_char){
-                     // Passwords match
-                     qDebug() << "Login successful";
-                     hide();
-                     ManagerWindow *managerWindow = new ManagerWindow(usernameL,this);
-                     managerWindow->setAttribute(Qt::WA_DeleteOnClose); // Ensure deletion on close
-                     managerWindow->setWindowFlags(Qt::Window); // Ensure appropriate window flags are set
-                     managerWindow->show();
-                     ui->line_password->clear();
-                     ui->line_username->clear();
-                     qDebug()<<"variables "<<usernameL<<passwordM_char<<passwordL_char<<passwordL_str<<passwordM_str<<salt<<generated_hash<<iterations;
-                }
-                else{
-                    qDebug()<<"Wrong password";
-            }
+              if (result !=1){
+                 qDebug()<<"EVP_PBE_scrypt Failed to proceed";
+                  return;}
+              else {
+                    if(generatedHashStr==passwordM_char){
+                         // Passwords match
+                         qDebug() << "Login successful";
+                         hide();
+                         ManagerWindow *managerWindow = new ManagerWindow(usernameL,this);
+                         managerWindow->setAttribute(Qt::WA_DeleteOnClose); // Ensure deletion on close
+                         managerWindow->setWindowFlags(Qt::Window); // Ensure appropriate window flags are set
+                         managerWindow->show();
+                         ui->line_password->clear();
+                         ui->line_username->clear();
+                         qDebug()<<"variables "<<usernameL<<passwordM_char<<passwordL_char<<passwordL_str<<passwordM_str<<salt<<generated_hash<<iterations;
+
+                    }
+                    else{
+                        qDebug()<<"Wrong password";
+            }   }
         }
     }
 }
-void MainWindow::setUsernameL(const QString& username)
-{
-    usernameL = username;
-}
-
-QString MainWindow::getUsernameL() const
-{
-    return usernameL;
-}
-
-
 
 void MainWindow::on_Back_Button_To_Login_clicked()
 {
@@ -200,21 +204,21 @@ void MainWindow::createTableAndStorePassword(){
         Scrypt_KDF();
         }
  }
-// void generateRandomSalt(uint8_t *salt, size_t saltSize)
-// {
-//     std::random_device rd;
-//     std::mt19937_64 gen(rd());
-//     std::uniform_int_distribution<uint8_t> distribution(0, 255);
+void generateRandomPassword(){
+ // const std::string CHARACTERS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+ // std::random_device rd;
+ // std::mt19937 gen(rd());
+ // std::uniform_int_distribution<size_t> distribution(0, CHARACTERS.size() - 1);
 
-//     for (size_t i = 0; i < saltSize; ++i)
-//     {
-//         salt[i] = distribution(gen);
-//     }
-
+ // for (size_t i = 0; i < saltSize; ++i)
+ // {
+ //     salt[i] = CHARACTERS[distribution(gen)];
+ // }
+}
 void MainWindow::registerUser(){
     QSqlQuery query;
-    usernameL          = ui->line_login->text();
-    passwordM     = ui->line_master_password->text();
+    usernameL   = ui->line_login->text();
+    passwordM   = ui->line_master_password->text();
     QString confirm_password    = ui->line_confirm_password->text();
     QString email               = ui->Email->text();
     if(usernameL.length()>3 && passwordM.length()>16 && confirm_password.length()>16 && email.length()>4 && isValidEmail(email)){
@@ -230,6 +234,12 @@ void MainWindow::registerUser(){
                 }
                 else if (!query.next()){
                     ui->stackedWidget->setCurrentIndex(2);
+                    ui->line_login->clear();
+                    ui->line_confirm_password->clear();
+                    ui->line_master_password->clear();
+                    ui->line_login->clear();
+                    ui->Email->clear();
+
                 }
                 else {
                     qDebug() << "Error: " << query.lastError().text();
@@ -293,14 +303,14 @@ void MainWindow::createDatabaseConnection(){
 
 void MainWindow::generateRandomSalt(uint8_t *salt, size_t saltSize)
 {
-    const std::string CHARACTERS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<size_t> distribution(0, CHARACTERS.size() - 1);
 
-    for (size_t i = 0; i < saltSize; ++i)
-    {
-        salt[i] = CHARACTERS[distribution(gen)];
+    if (RAND_bytes(salt, saltSize) != 1) {
+        // Handle error: unable to generate random bytes
+        // You can choose to throw an exception, log an error, or exit the program
+        // based on your application's error handling strategy.
+        // Here, we'll just print an error message to the console.
+        std::cerr << "Error generating random bytes." << std::endl;
+        exit(EXIT_FAILURE);
     }
 
 }
@@ -487,3 +497,69 @@ void MainWindow::Scrypt_KDF(){
         qDebug() << "Error: " << query.lastError().text();
     }
 }
+
+void MainWindow::GenerateTOTP(){
+    // Generate TOTP
+    QByteArray secret = "your_secret_key_here"; // Replace with your secret key
+    quint64 currentUnixTime = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
+    unsigned int timeStep = 30;
+    quint64 epoch = 0;
+    unsigned int digits = 8;
+    unsigned int digitMinimum = 8;
+    unsigned int digitMaximum = 8;
+    QString totp = libqotp::totp_base64(secret, currentUnixTime, timeStep, epoch, digits, digitMinimum, digitMaximum);
+
+    // Send TOTP via email
+    QString recipientEmail = "tomasbilka13@gmail.com"; // Replace with recipient's email
+    sendEmail(totp,recipientEmail);
+}
+void MainWindow::sendEmail(const QString &totp, const QString &recipientEmail) {
+
+    // Now we create a MimeMessage object. This is the email.
+    MimeMessage message;
+
+    EmailAddress sender("netbk.pass@gmail.com", "Password Manageris");
+    message.setSender(sender);
+
+    EmailAddress to(recipientEmail, "Recipient Name");
+    message.addRecipient(to);
+
+    message.setSubject("TOTP-PasswordManageris");
+
+    // Now add some text to the email.
+    // First we create a MimeText object.
+    MimeText text;
+    text.setText("Hi,\nThis is your TOTP password for login: " + totp + ".\n");
+
+    // Now add it to the mail
+    message.addPart(&text);
+
+    // Now we can send the mail
+    SmtpClient smtp("smtp.gmail.com", 465, SmtpClient::SslConnection);
+
+    smtp.connectToHost();
+    if (!smtp.waitForReadyConnected()) {
+        qDebug() << "Failed to connect to host!";
+        return;
+    }
+
+    smtp.login("netbk.pass@gmail.com", "uqfz zajb nufm uqzy");
+    if (!smtp.waitForAuthenticated()) {
+        qDebug() << "Failed to login!";
+        return;
+    }
+
+    smtp.sendMail(message);
+    if (!smtp.waitForMailSent()) {
+        qDebug() << "Failed to send mail!";
+        return;
+    }
+
+    smtp.quit();
+}
+
+
+
+
+
+

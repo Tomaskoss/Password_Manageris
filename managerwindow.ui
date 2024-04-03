@@ -36,14 +36,14 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="Table_page">
      <widget class="QTableView" name="tableView">
       <property name="geometry">
        <rect>
         <x>30</x>
-        <y>20</y>
+        <y>40</y>
         <width>850</width>
         <height>470</height>
        </rect>
@@ -228,6 +228,9 @@
 gridline-color: rgb(255, 255, 255);
 </string>
       </property>
+      <property name="inputMethodHints">
+       <set>Qt::ImhNone</set>
+      </property>
       <attribute name="horizontalHeaderStretchLastSection">
        <bool>true</bool>
       </attribute>
@@ -255,18 +258,32 @@ gridline-color: rgb(255, 255, 255);
       <property name="geometry">
        <rect>
         <x>780</x>
-        <y>520</y>
+        <y>530</y>
         <width>95</width>
-        <height>30</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="text">
        <string>Log Out</string>
       </property>
      </widget>
+     <widget class="QPushButton" name="show_Password_Button">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>10</y>
+        <width>95</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Show</string>
+      </property>
+     </widget>
      <zorder>background_picture</zorder>
      <zorder>tableView</zorder>
      <zorder>LogOut_Button</zorder>
+     <zorder>show_Password_Button</zorder>
     </widget>
     <widget class="QWidget" name="Change_page">
      <widget class="QPushButton" name="Back_Button">
@@ -275,7 +292,7 @@ gridline-color: rgb(255, 255, 255);
         <x>630</x>
         <y>520</y>
         <width>95</width>
-        <height>30</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="text">
@@ -358,7 +375,7 @@ gridline-color: rgb(255, 255, 255);
         <x>750</x>
         <y>520</y>
         <width>95</width>
-        <height>30</height>
+        <height>25</height>
        </rect>
       </property>
       <property name="text">
@@ -471,6 +488,9 @@ gridline-color: rgb(255, 255, 255);
       </property>
       <property name="text">
        <string/>
+      </property>
+      <property name="echoMode">
+       <enum>QLineEdit::Password</enum>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -700,6 +720,19 @@ gridline-color: rgb(255, 255, 255);
        <string>URL</string>
       </property>
      </widget>
+     <widget class="QPushButton" name="show_Password_Edit_Button">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>40</y>
+        <width>95</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Show</string>
+      </property>
+     </widget>
      <zorder>background_picture_2</zorder>
      <zorder>Confirm_Button</zorder>
      <zorder>password_Line</zorder>
@@ -711,6 +744,7 @@ gridline-color: rgb(255, 255, 255);
      <zorder>URL_Line</zorder>
      <zorder>app_Line</zorder>
      <zorder>label_Password</zorder>
+     <zorder>show_Password_Edit_Button</zorder>
     </widget>
    </widget>
   </widget>
