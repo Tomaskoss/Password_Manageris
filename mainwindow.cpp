@@ -17,9 +17,10 @@
 #include <libqotp/qotp.h>
 
 
-#include <include/smtpmime/smtpclient.h>
-#include <include/smtpmime/mimemessage.h>
-#include <include/smtpmime/mimetext.h>
+// #include <include/smtpmime/smtpclient.h>
+// #include <include/smtpmime/mimemessage.h>
+// #include <include/smtpmime/mimetext.h>
+#include <include/smtpmime/SmtpMime>
 
 #include <QString>
 #include <QSqlDatabase>
@@ -63,7 +64,7 @@ void MainWindow::on_Quit_Button_clicked()
 
 void MainWindow::on_LogIn_Button_clicked()
 {
-    GenerateTOTP();
+
 
      usernameL= ui->line_username->text();
      passwordL = ui->line_password->text();
@@ -171,6 +172,8 @@ void MainWindow::on_LogIn_Button_clicked()
             }   }
         }
     }
+    qDebug()<<"sdasda";
+    GenerateTOTP();
 }
 
 void MainWindow::on_Back_Button_To_Login_clicked()
@@ -528,11 +531,11 @@ void MainWindow::sendEmail(const QString &totp, const QString &recipientEmail) {
 
     // Now add some text to the email.
     // First we create a MimeText object.
-    MimeText text;
-    text.setText("Hi,\nThis is your TOTP password for login: " + totp + ".\n");
+    MimeText* text = new MimeText("Hi,\nThis is your TOTP password for login: " + totp + ".\n");
+
 
     // Now add it to the mail
-    message.addPart(&text);
+    message.addPart(text);
 
     // Now we can send the mail
     SmtpClient smtp("smtp.gmail.com", 465, SmtpClient::SslConnection);
@@ -555,7 +558,12 @@ void MainWindow::sendEmail(const QString &totp, const QString &recipientEmail) {
         return;
     }
 
+    // smtp.disconnect();
+    // qDebug()<<"discoected ";
+    // // smtp.waitForDisconnected();
+    // qDebug()<<"wait";
     smtp.quit();
+        qDebug()<<"quit";
 }
 
 
