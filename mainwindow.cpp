@@ -7,7 +7,6 @@
 #include <stdio.h>
 
 
-
 #include <openssl/evp.h>
 #include <openssl/sha.h>
 #include <openssl/rand.h>
@@ -20,6 +19,7 @@
 // #include <include/smtpmime/smtpclient.h>
 // #include <include/smtpmime/mimemessage.h>
 // #include <include/smtpmime/mimetext.h>
+
 #include <include/smtpmime/SmtpMime>
 
 #include <QString>
@@ -40,6 +40,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->stackedWidget->setCurrentIndex(0);
     createDatabaseConnection();
+
 
 }
 
@@ -64,8 +65,6 @@ void MainWindow::on_Quit_Button_clicked()
 
 void MainWindow::on_LogIn_Button_clicked()
 {
-
-
      usernameL= ui->line_username->text();
      passwordL = ui->line_password->text();
     size_t passwordL_lenght=passwordL.length();
@@ -73,6 +72,7 @@ void MainWindow::on_LogIn_Button_clicked()
     int iterations=0;
     unsigned char generated_hash[HASHLEN];
     QString algorithm_type;
+    QString Login_email;
     int r_BLOCK_SIZE,p_PARALLELISM_FACTOR ,MAX_MEMORY;
 
 
@@ -93,6 +93,7 @@ void MainWindow::on_LogIn_Button_clicked()
          r_BLOCK_SIZE = query.value("Login_r").toInt();
          p_PARALLELISM_FACTOR = query.value("Login_p").toInt();
          MAX_MEMORY= query.value("Login_maxmemory").toInt();
+         Login_email=query.value("Login_email").toString();
         } else{
             qDebug()<<"Username not found";
         }
@@ -118,13 +119,10 @@ void MainWindow::on_LogIn_Button_clicked()
             {
                 // Passwords match
                 qDebug() << "Login successful";
-                 hide();
-                ManagerWindow *managerWindow = new ManagerWindow(usernameL,this);
-                managerWindow->setAttribute(Qt::WA_DeleteOnClose); // Ensure deletion on close
-                managerWindow->setWindowFlags(Qt::Window); // Ensure appropriate window flags are set
-                managerWindow->show();
-                ui->line_password->clear();
-                ui->line_username->clear();
+                 ui->stackedWidget->setCurrentIndex(3);
+
+
+               // CreateManagerWindow();
             }
         }
         else if (algorithm_type=="PBKDF2"){
@@ -135,13 +133,7 @@ void MainWindow::on_LogIn_Button_clicked()
                 if (generatedHashStr==passwordM_char) {
                     // Passwords match
                     qDebug() << "Login successful";
-                    hide();
-                    ManagerWindow *managerWindow = new ManagerWindow(usernameL,this);
-                    managerWindow->setAttribute(Qt::WA_DeleteOnClose); // Ensure deletion on close
-                    managerWindow->setWindowFlags(Qt::Window); // Ensure appropriate window flags are set
-                    managerWindow->show();
-                    ui->line_password->clear();
-                    ui->line_username->clear();
+                     CreateManagerWindow();
                     qDebug()<<"variables "<<usernameL<<passwordM_char<<passwordL_char<<passwordL_str<<passwordM_str<<salt<<generated_hash<<iterations;
                 }
                 else{
@@ -157,13 +149,7 @@ void MainWindow::on_LogIn_Button_clicked()
                     if(generatedHashStr==passwordM_char){
                          // Passwords match
                          qDebug() << "Login successful";
-                         hide();
-                         ManagerWindow *managerWindow = new ManagerWindow(usernameL,this);
-                         managerWindow->setAttribute(Qt::WA_DeleteOnClose); // Ensure deletion on close
-                         managerWindow->setWindowFlags(Qt::Window); // Ensure appropriate window flags are set
-                         managerWindow->show();
-                         ui->line_password->clear();
-                         ui->line_username->clear();
+                         CreateManagerWindow();
                          qDebug()<<"variables "<<usernameL<<passwordM_char<<passwordL_char<<passwordL_str<<passwordM_str<<salt<<generated_hash<<iterations;
 
                     }
@@ -173,7 +159,7 @@ void MainWindow::on_LogIn_Button_clicked()
         }
     }
     qDebug()<<"sdasda";
-    GenerateTOTP();
+    GenerateTOTP(Login_email);
 }
 
 void MainWindow::on_Back_Button_To_Login_clicked()
@@ -223,7 +209,7 @@ void MainWindow::registerUser(){
     usernameL   = ui->line_login->text();
     passwordM   = ui->line_master_password->text();
     QString confirm_password    = ui->line_confirm_password->text();
-    QString email               = ui->Email->text();
+     email               = ui->Email->text();
     if(usernameL.length()>3 && passwordM.length()>16 && confirm_password.length()>16 && email.length()>4 && isValidEmail(email)){
         if(passwordM==confirm_password){
             query.prepare("SELECT Login_name FROM `passwordmanager`.`login_information` WHERE Login_name = :username");
@@ -259,10 +245,10 @@ void MainWindow::registerUser(){
     else if (usernameL.length()<3){
         ui->status_message_reg->setText("Login name is short");
     }
-    else if (passwordM.length()<16){
+    else if (passwordM.length()<=16){
         ui->status_message_reg->setText("master password is short");
     }
-    else if (confirm_password.length()<16){
+    else if (confirm_password.length()<=16){
         ui->status_message_reg->setText("confirm password is short");
     }
     else if (email.length()<4){
@@ -340,6 +326,7 @@ void MainWindow::Argon_KDF(){
             }
             else {
                 qDebug() << "openned database:" << dataBase.lastError().text();
+                qDebug()<<email<<":email";
                 // Prepare the SQL query with placeholders
                 query.prepare("CREATE TABLE IF NOT EXISTS `passwordmanager`.`" + table_name + "` ("
                                                                                               "`ID` INT NOT NULL AUTO_INCREMENT,"
@@ -355,11 +342,11 @@ void MainWindow::Argon_KDF(){
                     qDebug() << "argon2idHash:"<<encodedPasswordHash;
                     QString storedPasswordQString = QString::fromUtf8(encodedPasswordHash);
                     qDebug() << "Table created successfully";
-                    query.prepare("INSERT INTO `passwordmanager`.`login_information` (Login_name, Login_master_password,Kdf_algorithm) VALUES (:username, :password, :algorithm_type)");
+                    query.prepare("INSERT INTO `passwordmanager`.`login_information` (Login_name, Login_master_password,Kdf_algorithm,Login_email) VALUES (:username, :password, :algorithm_type, :Login_email)");
                     query.bindValue(":username", usernameL);
                     query.bindValue(":password", storedPasswordQString);
                     query.bindValue(":algorithm_type",algorithm_type);
-                    //query.bindValue(":salt", hexSalt);
+                    query.bindValue(":Login_email",email);
                     if(query.exec()){
                         qDebug() << "Insert created successfully";
                         ui->stackedWidget->setCurrentIndex(0);
@@ -412,8 +399,8 @@ void MainWindow::PBKDF2_KDF(){
                 hashedPasswordString.append(QString("%1").arg(pwdout[i], 2, 16, QLatin1Char('0')));
             }
             qDebug() << hashedPasswordString;
-            query.prepare("INSERT INTO `passwordmanager`.`login_information` (Login_name, Login_master_password,Login_salt,Login_iterations,Login_SALTLEN,Login_HASHLEN,Kdf_algorithm)"
-                          " VALUES (:username, :password, :login_salt, :login_iterations, :login_saltlen, :login_hashlen, :algorithm_type)");
+            query.prepare("INSERT INTO `passwordmanager`.`login_information` (Login_name, Login_master_password,Login_salt,Login_iterations,Login_SALTLEN,Login_HASHLEN,Kdf_algorithm,Login_email)"
+                          " VALUES (:username, :password, :login_salt, :login_iterations, :login_saltlen, :login_hashlen, :algorithm_type, :Login_email)");
             query.bindValue(":username", usernameL);
             query.bindValue(":password", hashedPasswordString);
             query.bindValue(":login_iterations", iterations);
@@ -421,6 +408,7 @@ void MainWindow::PBKDF2_KDF(){
             query.bindValue(":login_saltlen", SALTLEN);
             query.bindValue(":login_hashlen", HASHLEN);
             query.bindValue(":algorithm_type",algorithm_type);
+            query.bindValue(":Login_email",email);
         }
         if(query.exec()){
             qDebug() << "Insert created successfully";
@@ -476,8 +464,8 @@ void MainWindow::Scrypt_KDF(){
                                                                                   "PRIMARY KEY (`ID`))");
 
     if (query.exec()) {
-        query.prepare("INSERT INTO `passwordmanager`.`login_information` (Login_name, Login_master_password, Login_salt, Login_iterations, Login_r, Login_p, Login_maxmemory, Login_SALTLEN, Login_HASHLEN, Kdf_algorithm)"
-                      " VALUES (:username, :password, :login_salt, :login_iterations, :login_r, :login_p, :login_maxmemory, :login_saltlen, :login_hashlen, :algorithm_type)");
+        query.prepare("INSERT INTO `passwordmanager`.`login_information` (Login_name, Login_master_password, Login_salt, Login_iterations, Login_r, Login_p, Login_maxmemory, Login_SALTLEN, Login_HASHLEN, Kdf_algorithm,Login_email)"
+                      " VALUES (:username, :password, :login_salt, :login_iterations, :login_r, :login_p, :login_maxmemory, :login_saltlen, :login_hashlen, :algorithm_type, :Login_email)");
         query.bindValue(":username", usernameL);
         query.bindValue(":password", hashedPasswordString);
         query.bindValue(":login_salt", saltByteArray);
@@ -488,7 +476,7 @@ void MainWindow::Scrypt_KDF(){
         query.bindValue(":login_saltlen", SALTLEN);
         query.bindValue(":login_hashlen", HASHLEN);
         query.bindValue(":algorithm_type", algorithm_type);
-
+        query.bindValue(":Login_email",email);
         if(query.exec()){
             qDebug() << "Insert created successfully";
             ui->stackedWidget->setCurrentIndex(0);
@@ -501,21 +489,74 @@ void MainWindow::Scrypt_KDF(){
     }
 }
 
-void MainWindow::GenerateTOTP(){
+void MainWindow::GenerateTOTP(QString Login_email){
+    const int secretLength = 20; // Adjust the length as needed
+    QByteArray secret;
+    QSqlQuery query;
+
+    // Check if the secret key has already been generated and stored for the user
+    query.prepare("SELECT Shared_secret FROM login_information WHERE Login_name = :Login_name");
+    query.bindValue(":Login_name", usernameL);
+    if (query.exec()) {
+        if (query.next()) {
+            // Check if the query returned any rows
+            secret = query.value(0).toByteArray();
+            if (!secret.isEmpty()) {
+                // Secret key already exists for the user
+                qDebug() << "Secret key loaded from database";
+            } else {
+                // Secret key is NULL, generate a new one
+                if (!generateRandomSecret(secret, secretLength)) {
+                    qDebug() << "Error generating secret key";
+                    return;
+                }
+
+                // Update the existing record in the database
+                query.prepare("UPDATE login_information SET Shared_secret = :Shared_secret, Shared_secret_string = :Shared_secret_string WHERE Login_name = :Login_name");
+                query.bindValue(":Shared_secret", secret);
+                query.bindValue(":Shared_secret_string", base32Encode(secret));
+                query.bindValue(":Login_name", usernameL);
+                if (!query.exec()) {
+                    qDebug() << "Error updating secret key in the database:" << query.lastError().text();
+                    return;
+                }
+            }
+        } else {
+            // Secret key does not exist, generate a new one
+            if (!generateRandomSecret(secret, secretLength)) {
+                qDebug() << "Error generating secret key";
+                return;
+            }
+
+            // Insert a new record into the database
+            query.prepare("INSERT INTO login_information (Login_name, Shared_secret, Shared_secret_string) VALUES (:Login_name, :Shared_secret, :Shared_secret_string)");
+            query.bindValue(":Login_name", usernameL);
+            query.bindValue(":Shared_secret", secret);
+            query.bindValue(":Shared_secret_string", base32Encode(secret));
+            if (!query.exec()) {
+                qDebug() << "Error inserting secret key into the database:" << query.lastError().text();
+                return;
+            }
+        }
+    } else {
+        qDebug() << "Error executing SQL query:" << query.lastError().text();
+        return;
+    }
+
     // Generate TOTP
-    QByteArray secret = "your_secret_key_here"; // Replace with your secret key
     quint64 currentUnixTime = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
     unsigned int timeStep = 30;
+    unsigned int digits = 6;
+    unsigned int digitMinimum = 6;
+    unsigned int digitMaximum = 6;
     quint64 epoch = 0;
-    unsigned int digits = 8;
-    unsigned int digitMinimum = 8;
-    unsigned int digitMaximum = 8;
-    QString totp = libqotp::totp_base64(secret, currentUnixTime, timeStep, epoch, digits, digitMinimum, digitMaximum);
+    generatedTOTP = libqotp::totp(secret, currentUnixTime, timeStep, epoch, digits, digitMinimum, digitMaximum);
 
     // Send TOTP via email
-    QString recipientEmail = "tomasbilka13@gmail.com"; // Replace with recipient's email
-    sendEmail(totp,recipientEmail);
+    qDebug()<<"generated totp:"<<generatedTOTP;
+    sendEmail(generatedTOTP, Login_email);
 }
+
 void MainWindow::sendEmail(const QString &totp, const QString &recipientEmail) {
 
     // Now we create a MimeMessage object. This is the email.
@@ -566,8 +607,92 @@ void MainWindow::sendEmail(const QString &totp, const QString &recipientEmail) {
         qDebug()<<"quit";
 }
 
+void MainWindow::CreateManagerWindow(){
+    hide();
+    ManagerWindow *managerWindow = new ManagerWindow(usernameL,this);
+    managerWindow->setAttribute(Qt::WA_DeleteOnClose); // Ensure deletion on close
+    managerWindow->setWindowFlags(Qt::Window); // Ensure appropriate window flags are set
+    managerWindow->show();
+    ui->line_password->clear();
+    ui->line_username->clear();
+}
 
 
 
 
 
+
+void MainWindow::on_Back_To_Login_Button_clicked()
+{
+    ui->stackedWidget->setCurrentIndex(0);
+}
+
+
+
+
+
+void MainWindow::on_Confirm_Button_OTP_clicked()
+{
+
+    OTP_login();
+}
+void MainWindow::OTP_login(){
+    // Retrieve the TOTP generated for the user (assuming it's stored somewhere accessible)
+    QString generatedTOTP = getGeneratedTOTP(); // Implement this function to retrieve the generated TOTP
+    QString enteredTOTP= ui->otp_line->text();
+    qDebug() << "Entered OTP:" << enteredTOTP;
+    qDebug() << "Generated TOTP:" << generatedTOTP;
+    libqotp::totp_expire_time();
+    if (enteredTOTP == generatedTOTP) {
+        CreateManagerWindow(); // OTP verification successful, proceed to manager window
+    }
+    else {
+        ui->otp_label->setText("Wrong TOTP");
+    }
+}
+
+bool MainWindow::generateRandomSecret(QByteArray &secret, int length) {
+    secret.resize(length);
+    if (RAND_bytes(reinterpret_cast<unsigned char *>(secret.data()), length) != 1) {
+        return false; // Error generating random bytes
+    }
+    return true;
+}
+
+QString MainWindow::base32Encode(const QByteArray &data) {
+    static const char *base32chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+
+    QString result;
+    int buffer = 0;
+    int bitsRemaining = 0;
+
+    for (char byte : data) {
+        buffer = (buffer << 8) | (byte & 0xFF);
+        bitsRemaining += 8;
+        while (bitsRemaining >= 5) {
+            result += base32chars[(buffer >> (bitsRemaining - 5)) & 0x1F];
+            bitsRemaining -= 5;
+        }
+    }
+
+    if (bitsRemaining > 0) {
+        buffer <<= (5 - bitsRemaining);
+        result += base32chars[buffer & 0x1F];
+    }
+
+    // Remove padding '=' characters
+    while (result.endsWith(QLatin1Char('='))) {
+        result.chop(1);
+    }
+
+    return result;
+}
+
+void MainWindow::generateSecretKey(QByteArray &secretKey, int length) {
+    secretKey.resize(length);
+
+    // Generate random bytes for the secret key using OpenSSL
+    if (RAND_bytes(reinterpret_cast<unsigned char *>(secretKey.data()), length) != 1) {
+        qWarning() << "Error generating random bytes";
+    }
+}

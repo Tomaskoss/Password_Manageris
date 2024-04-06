@@ -39,6 +39,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         managerwindow.h managerwindow.cpp managerwindow.ui
         pictures.qrc
 
+
+
+
+
     )
 
 

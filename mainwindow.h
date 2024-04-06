@@ -25,7 +25,7 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     static QSqlDatabase dataBase;
-
+    QString getGeneratedTOTP() const { return generatedTOTP; }
 
 
 private slots:
@@ -43,25 +43,36 @@ private slots:
 
     void on_Back_Button_To_Register_clicked();
 
+    void on_Back_To_Login_Button_clicked();
+
+    void on_Confirm_Button_OTP_clicked();
+
 private:
     Ui::MainWindow *ui;
     void sendEmail(const QString &totp, const QString &recipientEmail);
-    void GenerateTOTP();
+    void GenerateTOTP(QString Login_email);
+    void CreateManagerWindow();
     void PBKDF2_KDF();
     void Scrypt_KDF();
     void createDatabaseConnection();
-    void establishEncryptedConnection(const QString& serverAddress, quint16 serverPort);
     void createTableAndStorePassword();
     void generateRandomSalt(uint8_t *salt, size_t saltSize);
     void registerUser();
     void clearData();
     void Argon_KDF();
     bool isValidEmail(QString &email);
+    bool generateRandomSecret(QByteArray &secret, int length);
+    QString base32Encode(const QByteArray &data);
+    void generateSecretKey(QByteArray &secretKey, int length);
+    void OTP_login();
     //QSqlDatabase dataBase;
     QSqlQuery query();
+    QString generatedTOTP;
+
     QString usernameL;
     QString passwordL;
     QString passwordM;
+    QString email ;
     uint8_t salt[];
 
 };
