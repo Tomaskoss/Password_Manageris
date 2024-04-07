@@ -55,13 +55,11 @@ void MainWindow::on_SignUp_Button_clicked()
 
 }
 
-
 void MainWindow::on_Quit_Button_clicked()
 {
     QSqlDatabase::database().close();
     QApplication::quit();
 }
-
 
 void MainWindow::on_LogIn_Button_clicked()
 {
@@ -119,6 +117,7 @@ void MainWindow::on_LogIn_Button_clicked()
             {
                 // Passwords match
                 qDebug() << "Login successful";
+                 GenerateTOTP(Login_email);
                  ui->stackedWidget->setCurrentIndex(3);
 
 
@@ -133,7 +132,9 @@ void MainWindow::on_LogIn_Button_clicked()
                 if (generatedHashStr==passwordM_char) {
                     // Passwords match
                     qDebug() << "Login successful";
-                     CreateManagerWindow();
+                     GenerateTOTP(Login_email);
+                     ui->stackedWidget->setCurrentIndex(3);
+                     //CreateManagerWindow();
                     qDebug()<<"variables "<<usernameL<<passwordM_char<<passwordL_char<<passwordL_str<<passwordM_str<<salt<<generated_hash<<iterations;
                 }
                 else{
@@ -149,7 +150,9 @@ void MainWindow::on_LogIn_Button_clicked()
                     if(generatedHashStr==passwordM_char){
                          // Passwords match
                          qDebug() << "Login successful";
-                         CreateManagerWindow();
+                          GenerateTOTP(Login_email);
+                         //CreateManagerWindow();
+                          ui->stackedWidget->setCurrentIndex(3);
                          qDebug()<<"variables "<<usernameL<<passwordM_char<<passwordL_char<<passwordL_str<<passwordM_str<<salt<<generated_hash<<iterations;
 
                     }
@@ -159,7 +162,7 @@ void MainWindow::on_LogIn_Button_clicked()
         }
     }
     qDebug()<<"sdasda";
-    GenerateTOTP(Login_email);
+
 }
 
 void MainWindow::on_Back_Button_To_Login_clicked()
@@ -193,17 +196,8 @@ void MainWindow::createTableAndStorePassword(){
         Scrypt_KDF();
         }
  }
-void generateRandomPassword(){
- // const std::string CHARACTERS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
- // std::random_device rd;
- // std::mt19937 gen(rd());
- // std::uniform_int_distribution<size_t> distribution(0, CHARACTERS.size() - 1);
 
- // for (size_t i = 0; i < saltSize; ++i)
- // {
- //     salt[i] = CHARACTERS[distribution(gen)];
- // }
-}
+
 void MainWindow::registerUser(){
     QSqlQuery query;
     usernameL   = ui->line_login->text();
@@ -554,7 +548,7 @@ void MainWindow::GenerateTOTP(QString Login_email){
 
     // Send TOTP via email
     qDebug()<<"generated totp:"<<generatedTOTP;
-    sendEmail(generatedTOTP, Login_email);
+   // sendEmail(generatedTOTP, Login_email);
 }
 
 void MainWindow::sendEmail(const QString &totp, const QString &recipientEmail) {
@@ -617,25 +611,18 @@ void MainWindow::CreateManagerWindow(){
     ui->line_username->clear();
 }
 
-
-
-
-
-
 void MainWindow::on_Back_To_Login_Button_clicked()
 {
     ui->stackedWidget->setCurrentIndex(0);
 }
 
-
-
-
-
 void MainWindow::on_Confirm_Button_OTP_clicked()
 {
 
     OTP_login();
+    ui->stackedWidget->setCurrentIndex(0);
 }
+
 void MainWindow::OTP_login(){
     // Retrieve the TOTP generated for the user (assuming it's stored somewhere accessible)
     QString generatedTOTP = getGeneratedTOTP(); // Implement this function to retrieve the generated TOTP
@@ -686,13 +673,4 @@ QString MainWindow::base32Encode(const QByteArray &data) {
     }
 
     return result;
-}
-
-void MainWindow::generateSecretKey(QByteArray &secretKey, int length) {
-    secretKey.resize(length);
-
-    // Generate random bytes for the secret key using OpenSSL
-    if (RAND_bytes(reinterpret_cast<unsigned char *>(secretKey.data()), length) != 1) {
-        qWarning() << "Error generating random bytes";
-    }
 }

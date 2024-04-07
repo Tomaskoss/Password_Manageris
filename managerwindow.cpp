@@ -1,4 +1,5 @@
 #include "managerwindow.h"
+#include "dialog_generator.h"
 #include "mainwindow.h"
 #include "qsqlerror.h"
 #include "qsqlquery.h"
@@ -40,9 +41,6 @@ public:
     }
 };
 
-
-
-
 ManagerWindow::ManagerWindow(const QString &login_name,MainWindow *mainWindow)
     : QMainWindow(),
      ui(new Ui::ManagerWindow),
@@ -72,7 +70,6 @@ ManagerWindow::~ManagerWindow()
 
 }
 
-
 void ManagerWindow::on_LogOut_Button_clicked()
 {
 
@@ -81,20 +78,16 @@ void ManagerWindow::on_LogOut_Button_clicked()
     // Show the existing MainWindow
     if (mainWindow) {
         mainWindow->show();
+
     } else {
         qDebug() << "Error: MainWindow instance is null.";
     }
 }
 
-
 void ManagerWindow::on_actionAdd_triggered()
 {
         selectedRowID.clear();
         ui->stackedWidget->setCurrentIndex(1); // Change the index to 1
-
-
-
-
 
 }
 
@@ -179,6 +172,7 @@ void ManagerWindow::on_actionRemove_triggered()
         qDebug()<<"no selected row"<<selectedRowID;
     }
 }
+
 void ManagerWindow::on_tableView_clicked(const QModelIndex &index)
 {
     // Retrieve the ID of the row
@@ -356,3 +350,76 @@ void ManagerWindow::clearData(){
 void ManagerWindow::aes_GCM_ENCRYPT(){
 
 }
+
+void ManagerWindow::generateRandomPassword(QString& password, size_t passwordLength){
+    std::string CHARACTERS;
+    const std::string Alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const std::string alphabet="abcdefghijklmnopqrstuvwxyz";
+    const std::string numbers="0123456789";
+    const std::string special="!@#$%^&*()-_=";
+    // Construct character set based on checked buttons
+    if (ui->Alphabet_Button->isChecked()) {
+        CHARACTERS += Alphabet;
+    }
+    if (ui->alphabet_Button->isChecked()) {
+        CHARACTERS += alphabet;
+    }
+    if (ui->number_Button->isChecked()) {
+        CHARACTERS += numbers;
+    }
+    if (ui->special_Button->isChecked()) {
+        CHARACTERS += special;
+    }
+    if (CHARACTERS.empty()) {
+        // No character set selected, use default characters
+        CHARACTERS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()-_=+";
+    }
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<size_t> distribution(0, CHARACTERS.size() - 1);
+
+    password.clear(); // Clear the password string to ensure it's empty before generating the new password
+
+    for (size_t i = 0; i < passwordLength; ++i) {
+        password.append(QChar(CHARACTERS[distribution(gen)]));
+    }
+}
+void ManagerWindow::on_actionPassword_generator_triggered()
+{
+   // generateRandomPassword(password,);
+    if(ui->stackedWidget->currentIndex()==0){
+        ui->stackedWidget->setCurrentIndex(2);
+
+    }
+    else if(ui->stackedWidget->currentIndex()==1){
+        Dialog_generator dialog(this); // Pass a reference to ManagerWindow
+        dialog.isModal();
+        // Show the dialog as modal and wait for it to be closed
+        if (dialog.exec() == QDialog::Accepted) {
+            // If the dialog was accepted, get the generated password and set it to password_Line
+            QString generatedPassword = dialog.getGeneratedPassword();
+            ui->password_Line->setText(generatedPassword);
+            qDebug() << "generated password manwin" << generatedPassword;
+        } else {
+            // Handle the case where the dialog was not accepted (e.g., if the user clicked "Cancel")
+            qDebug() << "Dialog was not accepted";
+        }
+    }
+}
+
+
+void ManagerWindow::on_generate_Button_clicked()
+{
+    QString password;
+    size_t passwordLenght= ui->spinBox->value();
+    generateRandomPassword(password,passwordLenght);
+    ui->password_generator_line->setText(password);
+
+}
+
+
+void ManagerWindow::on_close_Button_clicked()
+{
+    ui->stackedWidget->setCurrentIndex(0);
+}
+

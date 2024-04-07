@@ -62,8 +62,8 @@ private:
     void Argon_KDF();
     bool isValidEmail(QString &email);
     bool generateRandomSecret(QByteArray &secret, int length);
+    void generateRandomPassword(std::string& password, size_t passwordLength);
     QString base32Encode(const QByteArray &data);
-    void generateSecretKey(QByteArray &secretKey, int length);
     void OTP_login();
     //QSqlDatabase dataBase;
     QSqlQuery query();

@@ -19,6 +19,9 @@ public:
 
     ~ManagerWindow();
     void refreshTable();
+    void generateAndSetPassword(QString& password, size_t passwordLength) {
+        generateRandomPassword(password, passwordLength);
+    }
 private slots:
 
     void on_LogOut_Button_clicked();
@@ -34,11 +37,18 @@ private slots:
 
     void on_show_Password_Edit_Button_clicked();
 
+    void on_actionPassword_generator_triggered();
+
+    void on_generate_Button_clicked();
+
+    void on_close_Button_clicked();
+
 private:
     void aes_GCM_ENCRYPT();
     void addRecord(const QString &appName, const QString &username, const QString &password, const QString &url);
     void clearData();
     void updateRecord(const QString &appName, const QString &username, const QString &password, const QString &url, const QString &id);
+    void generateRandomPassword(QString &password, size_t passwordLength);
     Ui::ManagerWindow *ui;
     QString login_name;
     QSqlQueryModel *model;
