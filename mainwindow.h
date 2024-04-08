@@ -26,7 +26,7 @@ public:
     ~MainWindow();
     static QSqlDatabase dataBase;
     QString getGeneratedTOTP() const { return generatedTOTP; }
-
+    QString Argon_KDF(const QString& password, const uint8_t* salt);
 
 private slots:
     void on_SignUp_Button_clicked();
@@ -59,10 +59,11 @@ private:
     void generateRandomSalt(uint8_t *salt, size_t saltSize);
     void registerUser();
     void clearData();
-    void Argon_KDF();
+    bool  create_User_Table(const QString &table_name);
     bool isValidEmail(QString &email);
     bool generateRandomSecret(QByteArray &secret, int length);
     void generateRandomPassword(std::string& password, size_t passwordLength);
+    bool insert_Argon2id_KDF(const QString& username, const QString& hashedPassword,const QString& algorithm_type, const QString& email);
     QString base32Encode(const QByteArray &data);
     void OTP_login();
     //QSqlDatabase dataBase;

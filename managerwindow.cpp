@@ -1,6 +1,8 @@
 #include "managerwindow.h"
 #include "dialog_generator.h"
 #include "mainwindow.h"
+#include "openssl/err.h"
+#include "openssl/rand.h"
 #include "qsqlerror.h"
 #include "qsqlquery.h"
 #include "ui_managerwindow.h"
@@ -347,9 +349,81 @@ void ManagerWindow::clearData(){
     ui->app_Line->clear();
 }
 
-void ManagerWindow::aes_GCM_ENCRYPT(){
+// void ManagerWindow::aes_GCM_ENCRYPT() {
+//     // Initialize OpenSSL
+//     OpenSSL_add_all_algorithms();
+//     ERR_load_crypto_strings();
 
-}
+//     // Create a new EVP_CIPHER_CTX to hold the ciphering context
+//     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+//     if (!ctx) {
+//         // Handle error
+//         return;
+//     }
+
+//     // Set up the context for the encryption operation
+//     if (!EVP_EncryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL)) {
+//         // Handle error
+//         EVP_CIPHER_CTX_free(ctx);
+//         return;
+//     }
+
+//     // Generate a random IV
+//     unsigned char iv[12];
+//     if (RAND_bytes(iv, sizeof(iv)) <= 0) {
+//         // Handle error
+//         EVP_CIPHER_CTX_free(ctx);
+//         return;
+//     }
+
+//     // Set the IV length
+//     if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, sizeof(iv), NULL)) {
+//         // Handle error
+//         EVP_CIPHER_CTX_free(ctx);
+//         return;
+//     }
+
+//     // Get the key from the Argon_KDF function
+//     std::string keyString = mainWindow->Argon_KDF().toStdString();
+//     const unsigned char* key = reinterpret_cast<const unsigned char*>(keyString.c_str());
+
+//     // Set the key and IV
+//     if (!EVP_EncryptInit_ex(ctx, NULL, NULL, key, iv)) {
+//         // Handle error
+//         EVP_CIPHER_CTX_free(ctx);
+//         return;
+//     }
+
+//     // Convert the password to a C-style string
+//     std::string passwordString = password.toStdString();
+//     const unsigned char* plaintext = reinterpret_cast<const unsigned char*>(passwordString.c_str());
+//     int len;
+//     unsigned char ciphertext[1024 + EVP_GCM_TLS_TAG_LEN]; // Increased buffer size
+
+//     if (!EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, passwordString.size())) {
+//         // Handle error
+//         EVP_CIPHER_CTX_free(ctx);
+//         return;
+//     }
+
+//     // Finalize the encryption
+//     if (!EVP_EncryptFinal_ex(ctx, ciphertext + len, &len)) {
+//         // Handle error
+//         EVP_CIPHER_CTX_free(ctx);
+//         return;
+//     }
+
+//     // Get the tag
+//     unsigned char tag[EVP_GCM_TLS_TAG_LEN]; // Use EVP_GCM_TLS_TAG_LEN for tag length
+//     if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, EVP_GCM_TLS_TAG_LEN, tag)) {
+//         // Handle error
+//         EVP_CIPHER_CTX_free(ctx);
+//         return;
+//     }
+
+//     // Clean up
+//     EVP_CIPHER_CTX_free(ctx);
+// }
 
 void ManagerWindow::generateRandomPassword(QString& password, size_t passwordLength){
     std::string CHARACTERS;
