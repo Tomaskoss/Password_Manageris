@@ -89,6 +89,7 @@ void ManagerWindow::on_LogOut_Button_clicked()
 void ManagerWindow::on_actionAdd_triggered()
 {
         selectedRowID.clear();
+        resetAutoIncrementAndReindex();
         ui->stackedWidget->setCurrentIndex(1); // Change the index to 1
 
 }
@@ -222,6 +223,7 @@ void ManagerWindow::resetAutoIncrementAndReindex()
 void ManagerWindow::on_actionChange_triggered()
 {
     if (!selectedRowID.isEmpty()) { // Check if a row is selected
+            resetAutoIncrementAndReindex();
         ui->stackedWidget->setCurrentIndex(1); // Change the index to 1
     }
     else{
@@ -292,18 +294,23 @@ void ManagerWindow::updateRecord(const QString &appName, const QString &username
 }
 void ManagerWindow::addRecord(const QString &appName, const QString &username, const QString &password, const QString &url)
 {
+    // Encrypt the password
+    auto [encryptedPassword, iv, tag] = aes_GCM_ENCRYPT(password);
+
     QSqlQuery query;
     QString insertQueryString = "INSERT INTO `passwordmanager`.`" + login_name + "_password_data` "
-                                                                                 "(`Name of APP`, `Username`, `Password`, `URL`, `log`) "
-                                                                                 "VALUES (?, ?, ?, ?, NOW())";
+                                                                                 "(`Name of APP`, `Username`, `Password`, `URL`, `log`, `IV`, `Tag`) "
+                                                                                 "VALUES (?, ?, ?, ?, NOW(), ?, ?)";
 
     // Prepare the query with the SQL statement
     if (query.prepare(insertQueryString)) {
         // Bind values to placeholders
         query.addBindValue(appName);
         query.addBindValue(username);
-        query.addBindValue(password);
+        query.addBindValue(encryptedPassword); // Bind the encrypted password
         query.addBindValue(url);
+        query.addBindValue(iv); // Bind IV
+        query.addBindValue(tag); // Bind tag
 
         // Execute the prepared statement
         if (query.exec()) {
@@ -317,6 +324,7 @@ void ManagerWindow::addRecord(const QString &appName, const QString &username, c
     } else {
         qDebug() << "Query preparation error:" << query.lastError().text();
     }
+
 }
 
 
@@ -349,81 +357,63 @@ void ManagerWindow::clearData(){
     ui->app_Line->clear();
 }
 
-// void ManagerWindow::aes_GCM_ENCRYPT() {
-//     // Initialize OpenSSL
-//     OpenSSL_add_all_algorithms();
-//     ERR_load_crypto_strings();
+std::tuple<QString, QString, QString> ManagerWindow::aes_GCM_ENCRYPT(const QString &plaintext) {
+    // Initialize OpenSSL
+    OpenSSL_add_all_algorithms();
+    ERR_load_crypto_strings();
 
-//     // Create a new EVP_CIPHER_CTX to hold the ciphering context
-//     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
-//     if (!ctx) {
-//         // Handle error
-//         return;
-//     }
+    // Parameters for AES-GCM
+    const int key_len = 32; // 256-bit key
+    const int iv_len = 12;  // 96-bit IV
+    const int tag_len = 16; // 128-bit tag
 
-//     // Set up the context for the encryption operation
-//     if (!EVP_EncryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL)) {
-//         // Handle error
-//         EVP_CIPHER_CTX_free(ctx);
-//         return;
-//     }
+    // Generate a random IV
+    unsigned char iv[iv_len];
+    RAND_bytes(iv, iv_len);
 
-//     // Generate a random IV
-//     unsigned char iv[12];
-//     if (RAND_bytes(iv, sizeof(iv)) <= 0) {
-//         // Handle error
-//         EVP_CIPHER_CTX_free(ctx);
-//         return;
-//     }
+    // Retrieve KDF from the database using the login_name
+    QString loginMasterPassword = Get_KDF_From_Database(login_name);
+    if (loginMasterPassword.isEmpty()) {
+        qDebug() << "Failed to retrieve KDF from the database.";
+        return std::make_tuple("", "", ""); // Return empty values indicating failure
+    }
 
-//     // Set the IV length
-//     if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, sizeof(iv), NULL)) {
-//         // Handle error
-//         EVP_CIPHER_CTX_free(ctx);
-//         return;
-//     }
+    // Convert QString to QByteArray to use with OpenSSL
+    QByteArray keyBytes = loginMasterPassword.toUtf8();
+    unsigned char *key = reinterpret_cast<unsigned char*>(keyBytes.data());
 
-//     // Get the key from the Argon_KDF function
-//     std::string keyString = mainWindow->Argon_KDF().toStdString();
-//     const unsigned char* key = reinterpret_cast<const unsigned char*>(keyString.c_str());
+    // Encrypt plaintext using AES-GCM
+    EVP_CIPHER_CTX *ctx;
+    ctx = EVP_CIPHER_CTX_new();
+    EVP_EncryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, key, iv);
 
-//     // Set the key and IV
-//     if (!EVP_EncryptInit_ex(ctx, NULL, NULL, key, iv)) {
-//         // Handle error
-//         EVP_CIPHER_CTX_free(ctx);
-//         return;
-//     }
+    // Enable encryption padding (not required for GCM mode)
+    EVP_CIPHER_CTX_set_padding(ctx, 0);
 
-//     // Convert the password to a C-style string
-//     std::string passwordString = password.toStdString();
-//     const unsigned char* plaintext = reinterpret_cast<const unsigned char*>(passwordString.c_str());
-//     int len;
-//     unsigned char ciphertext[1024 + EVP_GCM_TLS_TAG_LEN]; // Increased buffer size
+    // Calculate ciphertext length
+    int ciphertext_len = plaintext.length() + EVP_CIPHER_CTX_block_size(ctx);
+    unsigned char *ciphertext = new unsigned char[ciphertext_len];
 
-//     if (!EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, passwordString.size())) {
-//         // Handle error
-//         EVP_CIPHER_CTX_free(ctx);
-//         return;
-//     }
+    int len;
+    EVP_EncryptUpdate(ctx, ciphertext, &len, (const unsigned char*)plaintext.toStdString().c_str(), plaintext.length());
+    int ciphertext_len_final = len;
 
-//     // Finalize the encryption
-//     if (!EVP_EncryptFinal_ex(ctx, ciphertext + len, &len)) {
-//         // Handle error
-//         EVP_CIPHER_CTX_free(ctx);
-//         return;
-//     }
+    // Finalize encryption (compute tag)
+    unsigned char tag[tag_len];
+    EVP_EncryptFinal_ex(ctx, ciphertext + len, &len);
+    EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, tag_len, tag);
 
-//     // Get the tag
-//     unsigned char tag[EVP_GCM_TLS_TAG_LEN]; // Use EVP_GCM_TLS_TAG_LEN for tag length
-//     if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, EVP_GCM_TLS_TAG_LEN, tag)) {
-//         // Handle error
-//         EVP_CIPHER_CTX_free(ctx);
-//         return;
-//     }
+    // Clean up
+    EVP_CIPHER_CTX_free(ctx);
 
-//     // Clean up
-//     EVP_CIPHER_CTX_free(ctx);
-// }
+    // Convert ciphertext, IV, and tag to QString and return as a tuple
+    QString encryptedText = QByteArray(reinterpret_cast<const char*>(ciphertext), ciphertext_len_final).toBase64();
+    QString ivString = QByteArray(reinterpret_cast<const char*>(iv), iv_len).toBase64();
+    QString tagString = QByteArray(reinterpret_cast<const char*>(tag), tag_len).toBase64();
+
+    return std::make_tuple(ivString, encryptedText, tagString);
+}
+
 
 void ManagerWindow::generateRandomPassword(QString& password, size_t passwordLength){
     std::string CHARACTERS;
@@ -458,6 +448,7 @@ void ManagerWindow::generateRandomPassword(QString& password, size_t passwordLen
         password.append(QChar(CHARACTERS[distribution(gen)]));
     }
 }
+
 void ManagerWindow::on_actionPassword_generator_triggered()
 {
    // generateRandomPassword(password,);
@@ -481,7 +472,6 @@ void ManagerWindow::on_actionPassword_generator_triggered()
     }
 }
 
-
 void ManagerWindow::on_generate_Button_clicked()
 {
     QString password;
@@ -491,9 +481,105 @@ void ManagerWindow::on_generate_Button_clicked()
 
 }
 
-
 void ManagerWindow::on_close_Button_clicked()
 {
     ui->stackedWidget->setCurrentIndex(0);
 }
 
+void ManagerWindow::handleErrors(void)
+{
+    ERR_print_errors_fp(stderr);
+    abort();
+}
+
+QString ManagerWindow::Get_KDF_From_Database(const QString &login_name) {
+    QSqlQuery query;
+    QString loginMasterPassword;
+    query.prepare("SELECT Login_master_password FROM `passwordmanager`.`login_information` WHERE Login_name = :username");
+    query.bindValue(":username", login_name);
+    if(query.exec()) {
+        if (query.next()) {
+            loginMasterPassword = query.value(0).toString();
+            qDebug() << "Login Master Password: " << loginMasterPassword;
+        }
+    } else {
+        qDebug() << "Query execution error: " << query.lastError();
+    }
+    return loginMasterPassword;
+}
+
+
+QString ManagerWindow::aes_GCM_DECRYPT(const QString &base64Ciphertext, const QString &base64IV, const QString &base64Tag) {
+    // Initialize OpenSSL
+    OpenSSL_add_all_algorithms();
+    ERR_load_crypto_strings();
+
+    // Parameters for AES-GCM
+    const int key_len = 32; // 256-bit key
+    const int iv_len = 12;  // 96-bit IV
+    const int tag_len = 16; // 128-bit tag
+
+    // Retrieve KDF from the database using the login_name
+    QString loginMasterPassword = Get_KDF_From_Database(login_name);
+    if (loginMasterPassword.isEmpty()) {
+        qDebug() << "Failed to retrieve KDF from the database.";
+        return ""; // Return empty string indicating failure
+    }
+
+    // Convert QString to QByteArray to use with OpenSSL
+    QByteArray keyBytes = loginMasterPassword.toUtf8();
+    unsigned char *key = reinterpret_cast<unsigned char*>(keyBytes.data());
+
+    // Decode base64 encoded IV and tag
+    QByteArray ivBytes = QByteArray::fromBase64(base64IV.toUtf8());
+    QByteArray tagBytes = QByteArray::fromBase64(base64Tag.toUtf8());
+    // Decode base64 encoded ciphertext
+    QByteArray ciphertextBytes = QByteArray::fromBase64(base64Ciphertext.toUtf8());
+
+    // Decrypt ciphertext using AES-GCM
+    EVP_CIPHER_CTX *ctx;
+    ctx = EVP_CIPHER_CTX_new();
+    EVP_DecryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, key, (const unsigned char*)ivBytes.constData());
+
+    // Enable encryption padding (not required for GCM mode)
+    EVP_CIPHER_CTX_set_padding(ctx, 0);
+
+    // Allocate memory for plaintext
+    unsigned char *plaintext = new unsigned char[ciphertextBytes.length() + EVP_CIPHER_CTX_block_size(ctx)];
+    int len;
+    int plaintext_len;
+
+    // Decrypt the ciphertext
+    if (!EVP_DecryptUpdate(ctx, plaintext, &len, (const unsigned char*)ciphertextBytes.constData(), ciphertextBytes.length())) {
+        // Decryption failed
+        EVP_CIPHER_CTX_free(ctx);
+        delete[] plaintext;
+        return "";
+    }
+    plaintext_len = len;
+
+    // Set the tag
+    if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, tag_len, (void*)tagBytes.constData())) {
+        // Decryption failed
+        EVP_CIPHER_CTX_free(ctx);
+        delete[] plaintext;
+        return "";
+    }
+
+    // Finalize decryption
+    if (!EVP_DecryptFinal_ex(ctx, plaintext + len, &len)) {
+        // Decryption failed
+        EVP_CIPHER_CTX_free(ctx);
+        delete[] plaintext;
+        return "";
+    }
+    plaintext_len += len;
+
+    // Clean up
+    EVP_CIPHER_CTX_free(ctx);
+
+    // Convert decrypted plaintext to QString and return
+    QString decryptedText = QString::fromUtf8(reinterpret_cast<char*>(plaintext), plaintext_len);
+    delete[] plaintext;
+    return decryptedText;
+}

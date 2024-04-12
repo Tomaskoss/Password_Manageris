@@ -245,7 +245,7 @@ void MainWindow::register_User(){
             query.bindValue(":username", usernameL);
             ui->status_message_reg->setText("Username is already taken");
             if(query.exec()){
-                qDebug() << "Query executed to";
+                qDebug() << "Query executed ";
                 if(query.next()){
                     qDebug() << "Error: Username already exists.";
                     return;
@@ -328,12 +328,15 @@ bool MainWindow::create_User_Table(const QString& table_name){
 
     query.prepare("CREATE TABLE IF NOT EXISTS `passwordmanager`.`" + table_name + "` ("
                                                                                   "`ID` INT NOT NULL AUTO_INCREMENT,"
-                                                                                  "`Name of APP` VARCHAR(48) NULL,"
-                                                                                  "`Username` VARCHAR(48) NULL,"
-                                                                                  "`Password` VARCHAR(64) NULL,"
+                                                                                  "`Name of APP` VARCHAR(255) NULL,"
+                                                                                  "`Username` VARCHAR(255) NULL,"
+                                                                                  "`Password` VARCHAR(255) NULL,"
                                                                                   "`URL` VARCHAR(512) NULL,"
                                                                                   "`log` DATETIME NULL,"
+                                                                                  "`IV` VARCHAR(255) NULL,"
+                                                                                  "`Tag` VARCHAR(255) NULL,"
                                                                                   "PRIMARY KEY (`ID`))");
+
     if (!query.exec()) {
         qDebug() << "Error creating table: " << query.lastError().text();
         return false;

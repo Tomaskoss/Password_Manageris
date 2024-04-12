@@ -27,6 +27,8 @@ public:
     static QSqlDatabase dataBase;
     QString getGeneratedTOTP() const { return generatedTOTP; }
     QString Argon_KDF(const QString& password, const uint8_t* salt);
+    QString PBKDF2_KDF(const QString &password, const uint8_t *salt);
+    QString Scrypt_KDF(const QString &password, const uint8_t *salt);
 
 private slots:
     void on_SignUp_Button_clicked();
@@ -52,8 +54,7 @@ private:
     void send_Email(const QString &totp, const QString &recipientEmail);
     void Generate_TOTP(QString Login_email);
     void Create_Manager_Window();
-    QString PBKDF2_KDF(const QString &password, const uint8_t *salt);
-    QString Scrypt_KDF(const QString &password, const uint8_t *salt);
+
     void create_Database_Connection();
     void create_Table_And_Store_Password();
     void generate_Random_Salt(uint8_t *salt, size_t saltSize);
@@ -71,7 +72,6 @@ private:
     //QSqlDatabase dataBase;
     QSqlQuery query();
     QString generatedTOTP;
-
     QString usernameL;
     QString passwordL;
     QString passwordM;
