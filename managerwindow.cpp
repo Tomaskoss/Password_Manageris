@@ -64,6 +64,7 @@ ManagerWindow::ManagerWindow(const QString &login_name,MainWindow *mainWindow)
         qDebug() << "Query execution error:" << query.lastError().text();
     }
 
+
 }
 
 ManagerWindow::~ManagerWindow()
@@ -333,6 +334,14 @@ void ManagerWindow::on_show_Password_Button_clicked()
     passwordsVisible = !passwordsVisible;
     // Refresh the table view to reflect the updated visibility
     ui->tableView->viewport()->update();
+    auto encryptionData = Get_Database_encryption_data();
+
+    // Extract IV, encrypted text, and tag from the returned tuple
+    QString ivString = std::get<0>(encryptionData);
+    QString encryptedText = std::get<1>(encryptionData);
+    QString tagString = std::get<2>(encryptionData);
+    QString decryptedText = aes_GCM_DECRYPT(ivString, encryptedText, tagString);
+    qDebug()<<decryptedText<<"decryptedtext";
 }
 
 
@@ -521,6 +530,7 @@ QString ManagerWindow::aes_GCM_DECRYPT(const QString &base64Ciphertext, const QS
 
     // Retrieve KDF from the database using the login_name
     QString loginMasterPassword = Get_KDF_From_Database(login_name);
+    qDebug()<<"loginMasterPassword Aes:"<<loginMasterPassword;
     if (loginMasterPassword.isEmpty()) {
         qDebug() << "Failed to retrieve KDF from the database.";
         return ""; // Return empty string indicating failure
@@ -577,9 +587,34 @@ QString ManagerWindow::aes_GCM_DECRYPT(const QString &base64Ciphertext, const QS
 
     // Clean up
     EVP_CIPHER_CTX_free(ctx);
+    qDebug()<<plaintext<<"plaintext";
 
     // Convert decrypted plaintext to QString and return
     QString decryptedText = QString::fromUtf8(reinterpret_cast<char*>(plaintext), plaintext_len);
+    qDebug()<<decryptedText<<":decryptedText";
     delete[] plaintext;
     return decryptedText;
+}
+
+
+std::tuple<QString, QString, QString> ManagerWindow::Get_Database_encryption_data() {
+    QSqlQuery query;
+    QString ivString;
+    QString tagString;
+    QString encryptedText;
+    query.prepare("SELECT Password, IV, Tag FROM `passwordmanager`.`testovaniescryptupokus1_password_data` WHERE id = :id");
+    query.bindValue(":id", selectedRowID);
+    if(query.exec()) {
+        if (query.next()) {
+            encryptedText = query.value(0).toString();
+            ivString = query.value(1).toString();
+            tagString = query.value(2).toString();
+            qDebug() << "Login Master Password: " << encryptedText;
+            qDebug() << "IV: " << ivString;
+            qDebug() << "Tag: " << tagString;
+        }
+    } else {
+        qDebug() << "Query execution error: " << query.lastError();
+    }
+    return std::make_tuple(ivString, encryptedText, tagString);
 }
