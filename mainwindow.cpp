@@ -73,7 +73,6 @@ void MainWindow::on_LogIn_Button_clicked()
     QString Login_email;
     int r_BLOCK_SIZE,p_PARALLELISM_FACTOR ,MAX_MEMORY;
 
-
     if(usernameL.isEmpty() || passwordL.isEmpty())
     {
         ui->status_message_log->setText("Username or password is blank");
@@ -158,7 +157,7 @@ void MainWindow::on_LogIn_Button_clicked()
             }   }
         }
     }
-    qDebug()<<"sdasda";
+    qDebug()<<"verification succesfull";
 
 }
 
@@ -180,14 +179,17 @@ void MainWindow::on_Confirm_Button_clicked()
 
 void MainWindow::create_Table_And_Store_Password(){
 
+    QString table_name = usernameL+"_password_data";
+    uint8_t salt[SALTLEN];
+    generate_Random_Salt(salt, SALTLEN);
+
     if(ui->comboBox->currentText()=="Argon2id"){
         QString algorithm_type = ui->comboBox->currentText();
-         uint8_t salt[SALTLEN];
-        generate_Random_Salt(salt, SALTLEN);
+
         QString encodedPasswordHash = Argon_KDF(passwordM, salt);
-        QString table_name = usernameL+"_password_data";
+
         create_User_Table(table_name);
-        if (!insert_Argon2id_KDF(usernameL, encodedPasswordHash, algorithm_type, email)) {
+        if (!insert_Argon2id_KDF(usernameL, encodedPasswordHash, algorithm_type, email,pin)) {
             qDebug() << "Error inserting Argon2id KDF.";
             return;
         }
@@ -196,14 +198,11 @@ void MainWindow::create_Table_And_Store_Password(){
 
     else if (ui->comboBox->currentText()=="PBKDF2"){
         int iterations=600000;
-        QString table_name = usernameL+"_password_data";
-        uint8_t salt[SALTLEN];
-        generate_Random_Salt(salt, SALTLEN);
         QByteArray saltByteArray(reinterpret_cast<const char*>(salt), SALTLEN);
         QString algorithm_type = ui->comboBox->currentText();
         create_User_Table(table_name);
         QString encodedPasswordHash = PBKDF2_KDF(passwordM,salt);
-        if (!insert_PBKDF2_KDF(usernameL, encodedPasswordHash, algorithm_type, email,iterations,saltByteArray)) {
+        if (!insert_PBKDF2_KDF(usernameL, encodedPasswordHash, algorithm_type, email,iterations,saltByteArray,pin)) {
             qDebug() << "Error inserting Argon2id KDF.";
             return;
         }
@@ -211,10 +210,8 @@ void MainWindow::create_Table_And_Store_Password(){
 
     }
     else if(ui->comboBox->currentText()=="Scrypt"){
-        QString table_name = usernameL+"_password_data";
-        uint8_t salt[SALTLEN];
+
         create_User_Table(table_name);
-        generate_Random_Salt(salt, SALTLEN);
          QString algorithm_type = ui->comboBox->currentText();
         QByteArray saltByteArray(reinterpret_cast<const char*>(salt), SALTLEN);
         QString encodedPasswordHash = Scrypt_KDF(passwordM,salt);
@@ -226,62 +223,83 @@ void MainWindow::create_Table_And_Store_Password(){
         const uint64_t r = BLOCK_SIZE;
         const uint64_t p = PARALLELISM_FACTOR;
         const uint64_t maxmemory = MAX_MEMORY;
-        if (!insert_Scrypt_KDF(usernameL,encodedPasswordHash,algorithm_type,email,N,r,p,maxmemory,saltByteArray)) {
+        if (!insert_Scrypt_KDF(usernameL,encodedPasswordHash,algorithm_type,email,N,r,p,maxmemory,saltByteArray,pin)) {
             qDebug() << "Error inserting Argon2id KDF.";
             return;
         }
         ui->stackedWidget->setCurrentIndex(0);
     }
 }
-void MainWindow::register_User(){
-    QSqlQuery query;
+
+
+bool MainWindow::validate_Register_Credentials(){
     usernameL   = ui->line_login->text();
     passwordM   = ui->line_master_password->text();
     QString confirm_password    = ui->line_confirm_password->text();
-     email               = ui->Email->text();
-    if(usernameL.length()>3 && passwordM.length()>16 && confirm_password.length()>16 && email.length()>4 && is_Valid_Email(email)){
-        if(passwordM==confirm_password){
-            query.prepare("SELECT Login_name FROM `passwordmanager`.`login_information` WHERE Login_name = :username");
-            query.bindValue(":username", usernameL);
+    pin = ui->line_pin->text();
+    email      = ui->Email->text();
+
+    if(usernameL.length()<=3){
+        ui->status_message_reg->setText("Username is too short");
+        return false;
+    }else if(usernameL.length()>32){
+        ui->status_message_reg->setText("Username is long short");
+        return false;
+    }
+
+    if(passwordM.length()<=16){
+        ui->status_message_reg->setText("Master password is too short");
+        return false;
+    } else if(passwordM.length()>64){
+        ui->status_message_reg->setText("Master password is long short");
+        return false;}
+
+    if(confirm_password != passwordM){
+        ui->status_message_reg->setText("Passwords do not match");
+        return false;
+    }
+
+    if(email.length()<4 || !is_Valid_Email(email)){
+        ui->status_message_reg->setText("Invalid email format");
+        return false;
+        }
+
+    if(pin.length()<6){
+            ui->status_message_reg->setText("PIN is too short");
+            return false;
+        }
+    else if(pin.length()>16){
+        ui->status_message_reg->setText("PIN is too long");
+        return false;
+    }
+        // Check if the username is available
+    if (!is_Username_Available(usernameL)) {
             ui->status_message_reg->setText("Username is already taken");
-            if(query.exec()){
-                qDebug() << "Query executed ";
-                if(query.next()){
-                    qDebug() << "Error: Username already exists.";
-                    return;
-                }
-                else if (!query.next()){
-                    ui->stackedWidget->setCurrentIndex(2);
-                    ui->line_login->clear();
-                    ui->line_confirm_password->clear();
-                    ui->line_master_password->clear();
-                    ui->line_login->clear();
-                    ui->Email->clear();
-                }
-                else {
-                    qDebug() << "Error: " << query.lastError().text();
-                    return;
-                }
-            }
+            return false;
         }
-        else{
-            ui->status_message_reg->setText("Passwords are not matching");
-        }
+    qDebug()<<"Validation successful";
+        return true;
+}
+
+bool MainWindow::is_Username_Available(const QString& username) {
+    QSqlQuery query;
+    query.prepare("SELECT Login_name FROM `passwordmanager`.`login_information` WHERE Login_name = :username");
+    query.bindValue(":username", username);
+    if (!query.exec()) {
+        qDebug() << "Error executing query: " << query.lastError().text();
+        return false;
     }
-    else if (usernameL.length()<3){
-        ui->status_message_reg->setText("Login name is short");
+    return !query.next(); // If query.next() returns false, username is available
+}
+
+
+void MainWindow::register_User(){
+    // Validate user credentials
+    if (!validate_Register_Credentials()) {
+        return;
     }
-    else if (passwordM.length()<=16){
-        ui->status_message_reg->setText("master password is short");
-    }
-    else if (confirm_password.length()<=16){
-        ui->status_message_reg->setText("confirm password is short");
-    }
-    else if (email.length()<4){
-        ui->status_message_reg->setText("Email name is short");
-    }
-    else if(!is_Valid_Email(email)){
-        ui->status_message_reg->setText("Wrong email format");
+    else{
+        ui->stackedWidget->setCurrentIndex(2);
     }
 }
 
@@ -345,7 +363,7 @@ bool MainWindow::create_User_Table(const QString& table_name){
     return true;
 }
 
-bool MainWindow::insert_Argon2id_KDF(const QString& username, const QString& hashedPassword,const QString& algorithm_type, const QString& email){
+bool MainWindow::insert_Argon2id_KDF(const QString& username, const QString& hashedPassword,const QString& algorithm_type, const QString& email,const QString& pin){
     QSqlQuery query;
 
     if (!dataBase.isOpen()) {
@@ -353,12 +371,12 @@ bool MainWindow::insert_Argon2id_KDF(const QString& username, const QString& has
         return false;
     }
 
-    query.prepare("INSERT INTO `passwordmanager`.`login_information` (Login_name, Login_master_password,Kdf_algorithm,Login_email) VALUES (:username, :password, :algorithm_type, :Login_email)");
+    query.prepare("INSERT INTO `passwordmanager`.`login_information` (Login_name, Login_master_password,Kdf_algorithm,Login_email,Login_PIN) VALUES (:username, :password, :algorithm_type, :Login_email, :Login_PIN)");
     query.bindValue(":username", username);
     query.bindValue(":password", hashedPassword);
     query.bindValue(":algorithm_type", algorithm_type);
     query.bindValue(":Login_email", email);
-
+    query.bindValue(":Login_PIN",pin);
     if (!query.exec()) {
         qDebug() << "Error inserting Argon2id KDF: " << query.lastError().text();
         return false;
@@ -387,10 +405,10 @@ QString MainWindow::PBKDF2_KDF(const QString& password, const uint8_t* salt){
             return hashedPasswordString;
 }
 
-bool MainWindow::insert_PBKDF2_KDF(const QString& username,const QString& hashedPassword,const QString& algorithm_type,const QString& email, const int& iterations, const QByteArray& saltByteArray){
+bool MainWindow::insert_PBKDF2_KDF(const QString& username,const QString& hashedPassword,const QString& algorithm_type,const QString& email, const int& iterations, const QByteArray& saltByteArray,const QString& pin){
      QSqlQuery query;
-    query.prepare("INSERT INTO `passwordmanager`.`login_information` (Login_name, Login_master_password,Login_salt,Login_iterations,Login_SALTLEN,Login_HASHLEN,Kdf_algorithm,Login_email)"
-                  " VALUES (:username, :password, :login_salt, :login_iterations, :login_saltlen, :login_hashlen, :algorithm_type, :Login_email)");
+    query.prepare("INSERT INTO `passwordmanager`.`login_information` (Login_name, Login_master_password,Login_salt,Login_iterations,Login_SALTLEN,Login_HASHLEN,Kdf_algorithm,Login_email,Login_PIN)"
+                  " VALUES (:username, :password, :login_salt, :login_iterations, :login_saltlen, :login_hashlen, :algorithm_type, :Login_email, :Login_PIN)");
     query.bindValue(":username", usernameL);
     query.bindValue(":password", hashedPassword);
     query.bindValue(":login_iterations", iterations);
@@ -399,6 +417,7 @@ bool MainWindow::insert_PBKDF2_KDF(const QString& username,const QString& hashed
     query.bindValue(":login_hashlen", HASHLEN);
     query.bindValue(":algorithm_type",algorithm_type);
     query.bindValue(":Login_email",email);
+    query.bindValue(":Login_PIN",pin);
     if (!query.exec()) {
         qDebug() << "Error inserting Argon2id KDF: " << query.lastError().text();
         return false;
@@ -442,11 +461,11 @@ QString MainWindow::Scrypt_KDF(const QString& password, const uint8_t* salt){
 
 }
 
-bool MainWindow::insert_Scrypt_KDF(const QString& username,const QString& hashedPassword,const QString& algorithm_type,const QString& email,const uint64_t& N,const uint64_t& r,const uint64_t& p,const uint64_t maxmemory , const QByteArray& saltByteArray){
+bool MainWindow::insert_Scrypt_KDF(const QString& username, const QString& hashedPassword, const QString& algorithm_type, const QString& email, const uint64_t& N, const uint64_t& r, const uint64_t& p, const uint64_t maxmemory , const QByteArray& saltByteArray, const QString &pin){
     QSqlQuery query;
 
-        query.prepare("INSERT INTO `passwordmanager`.`login_information` (Login_name, Login_master_password, Login_salt, Login_iterations, Login_r, Login_p, Login_maxmemory, Login_SALTLEN, Login_HASHLEN, Kdf_algorithm,Login_email)"
-                      " VALUES (:username, :password, :login_salt, :login_iterations, :login_r, :login_p, :login_maxmemory, :login_saltlen, :login_hashlen, :algorithm_type, :Login_email)");
+        query.prepare("INSERT INTO `passwordmanager`.`login_information` (Login_name, Login_master_password, Login_salt, Login_iterations, Login_r, Login_p, Login_maxmemory, Login_SALTLEN, Login_HASHLEN, Kdf_algorithm, Login_email, Login_PIN)"
+                      " VALUES (:username, :password, :login_salt, :login_iterations, :login_r, :login_p, :login_maxmemory, :login_saltlen, :login_hashlen, :algorithm_type, :Login_email, :Login_PIN)");
         query.bindValue(":username", usernameL);
         query.bindValue(":password", hashedPassword);
         query.bindValue(":login_salt", saltByteArray);
@@ -458,6 +477,7 @@ bool MainWindow::insert_Scrypt_KDF(const QString& username,const QString& hashed
         query.bindValue(":login_hashlen", HASHLEN);
         query.bindValue(":algorithm_type", algorithm_type);
         query.bindValue(":Login_email",email);
+        query.bindValue(":Login_PIN",pin);
         if (!query.exec()) {
             qDebug() << "Error inserting Argon2id KDF: " << query.lastError().text();
             return false;
@@ -575,10 +595,6 @@ void MainWindow::send_Email(const QString &totp, const QString &recipientEmail) 
         return;
     }
 
-    // smtp.disconnect();
-    // qDebug()<<"discoected ";
-    // // smtp.waitForDisconnected();
-    // qDebug()<<"wait";
     smtp.quit();
         qDebug()<<"quit";
 }
@@ -601,11 +617,43 @@ void MainWindow::on_Back_To_Login_Button_clicked()
 void MainWindow::on_Confirm_Button_OTP_clicked()
 {
 
-    OTP_login();
-    ui->stackedWidget->setCurrentIndex(0);
+    if (OTP_login() && PIN_Login()) {
+        ui->stackedWidget->setCurrentIndex(0);
+    }
 }
 
-void MainWindow::OTP_login(){
+
+bool MainWindow::PIN_Login(){
+    QString enteredPIN= ui->pin_line->text();
+    QString storedPIN= getPIN_Login();
+
+
+
+    if(enteredPIN==storedPIN){
+        ui->pin_line->clear();
+        Create_Manager_Window();
+        return true;
+    }
+    else{
+        ui->otp_label->setText("Wrong PIN");
+        return false;
+    }
+
+}
+
+
+QString MainWindow::getPIN_Login(){
+    QSqlQuery query;
+    QString pin;
+    query.prepare("SELECT Login_PIN FROM `passwordmanager`.`login_information` WHERE Login_name = :username");
+    query.bindValue(":username", usernameL);
+    if(query.exec() && query.next()) { // Execute the query and check if it was successful and if there is a result
+        pin = query.value(0).toString(); // Fetch the value of the Login_PIN column and convert it to string
+    }
+    return pin;
+}
+
+bool MainWindow::OTP_login(){
     // Retrieve the TOTP generated for the user (assuming it's stored somewhere accessible)
     QString generatedTOTP = getGeneratedTOTP(); // Implement this function to retrieve the generated TOTP
     QString enteredTOTP= ui->otp_line->text();
@@ -613,11 +661,15 @@ void MainWindow::OTP_login(){
     qDebug() << "Generated TOTP:" << generatedTOTP;
     libqotp::totp_expire_time();
     if (enteredTOTP == generatedTOTP) {
-        Create_Manager_Window(); // OTP verification successful, proceed to manager window
+       // Create_Manager_Window(); // OTP verification successful, proceed to manager window
+        ui->otp_line->clear();
+        return true;
     }
     else {
         ui->otp_label->setText("Wrong TOTP");
+        return false;
     }
+
 }
 
 bool MainWindow::generate_Random_Secret(QByteArray &secret, int length) {

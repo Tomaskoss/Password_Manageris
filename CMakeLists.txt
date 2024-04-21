@@ -87,7 +87,7 @@ endif()
     link_directories("${PROJECT_FOLDER}\\libs\\qotp-main\\install\\lib")
     target_link_libraries(PasswordManageris PRIVATE "${PROJECT_FOLDER}\\libs\\qotp-main\\install\\lib\\liblibqotp.a")
 
-    include_directories("${PROJECT_FOLDER}\\libs/openSSL_build\\include")
+    include_directories("${PROJECT_FOLDER}\\libs\\openSSL_build\\include")
 
     link_directories("${PROJECT_FOLDER}\\libs\\openSSL_build\\lib")
 

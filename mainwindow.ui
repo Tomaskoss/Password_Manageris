@@ -266,7 +266,7 @@
       <property name="geometry">
        <rect>
         <x>320</x>
-        <y>310</y>
+        <y>350</y>
         <width>80</width>
         <height>25</height>
        </rect>
@@ -347,7 +347,7 @@
       <property name="geometry">
        <rect>
         <x>220</x>
-        <y>310</y>
+        <y>350</y>
         <width>80</width>
         <height>25</height>
        </rect>
@@ -536,6 +536,31 @@
        <string>Your email</string>
       </property>
      </widget>
+     <widget class="QLineEdit" name="line_pin">
+      <property name="geometry">
+       <rect>
+        <x>220</x>
+        <y>310</y>
+        <width>180</width>
+        <height>30</height>
+       </rect>
+      </property>
+      <property name="inputMethodHints">
+       <set>Qt::ImhNone</set>
+      </property>
+      <property name="inputMask">
+       <string/>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="echoMode">
+       <enum>QLineEdit::Normal</enum>
+      </property>
+      <property name="placeholderText">
+       <string>PIN</string>
+      </property>
+     </widget>
      <zorder>Background_reg</zorder>
      <zorder>Logo</zorder>
      <zorder>Register_Button</zorder>
@@ -545,6 +570,7 @@
      <zorder>line_master_password</zorder>
      <zorder>line_confirm_password</zorder>
      <zorder>Email</zorder>
+     <zorder>line_pin</zorder>
     </widget>
     <widget class="QWidget" name="Encrypting_Page">
      <widget class="QLabel" name="background_pictures">
@@ -748,12 +774,29 @@
        <string/>
       </property>
      </widget>
+     <widget class="QLineEdit" name="pin_line">
+      <property name="geometry">
+       <rect>
+        <x>220</x>
+        <y>240</y>
+        <width>170</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="placeholderText">
+       <string>ENTER PIN</string>
+      </property>
+     </widget>
      <zorder>background_label</zorder>
      <zorder>otp_line</zorder>
      <zorder>Back_To_Login_Button</zorder>
      <zorder>Confirm_Button_OTP</zorder>
      <zorder>Logo_picture_2</zorder>
      <zorder>otp_label</zorder>
+     <zorder>pin_line</zorder>
     </widget>
    </widget>
   </widget>

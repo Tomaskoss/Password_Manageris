@@ -8,9 +8,11 @@
 #include "ui_managerwindow.h"
 #include <QSqlDatabase>
 #include <QSqlQueryModel>
+#include <QStandardItemModel> // Add this include statement
 
 #include <QStyledItemDelegate>
 #include "openssl/evp.h"
+#include <QMessageBox> // Include the necessary header file
 
 bool passwordsVisible = false;
 class PasswordDelegate : public QStyledItemDelegate {
@@ -139,6 +141,16 @@ void ManagerWindow::refreshTable() {
     } else {
         qDebug() << "Failed to create QSqlQueryModel object.";
     }
+    // Iterate over the model data
+    for (int row = 0; row < model->rowCount(); ++row) {
+        QString decryptedPassword = Get_Decrypted_Password(row); // Get decrypted password for the current row
+        // Update the model data with decrypted password
+        model->setData(model->index(row, 3), decryptedPassword); // Assuming password column is at index 3
+    }
+
+    // Set the model for the table view
+    ui->tableView->setModel(model);
+
 }
 
 void ManagerWindow::on_actionRemove_triggered()
@@ -333,15 +345,12 @@ void ManagerWindow::on_show_Password_Button_clicked()
 {
     passwordsVisible = !passwordsVisible;
     // Refresh the table view to reflect the updated visibility
-    ui->tableView->viewport()->update();
-    auto encryptionData = Get_Database_encryption_data();
+        ui->tableView->viewport()->update();
 
-    // Extract IV, encrypted text, and tag from the returned tuple
-    QString ivString = std::get<0>(encryptionData);
-    QString encryptedText = std::get<1>(encryptionData);
-    QString tagString = std::get<2>(encryptionData);
-    QString decryptedText = aes_GCM_DECRYPT(ivString, encryptedText, tagString);
-    qDebug()<<decryptedText<<"decryptedtext";
+
+
+
+
 }
 
 
@@ -617,4 +626,32 @@ std::tuple<QString, QString, QString> ManagerWindow::Get_Database_encryption_dat
         qDebug() << "Query execution error: " << query.lastError();
     }
     return std::make_tuple(ivString, encryptedText, tagString);
+}
+
+
+QString ManagerWindow::Get_Decrypted_Password(int row) {
+    QSqlQuery query;
+    QString decryptedPassword;
+    // Assuming the ID column is at index 0 in the model
+    QVariant data = model->data(model->index(row, 0));
+    QString id = data.toString();
+
+    query.prepare("SELECT Password, IV, Tag FROM `passwordmanager`.`testovaniescryptupokus1_password_data` WHERE id = :id");
+    query.bindValue(":id", id);
+    if(query.exec()) {
+        if (query.next()) {
+            QString encryptedText = query.value(0).toString();
+            QString ivString = query.value(1).toString();
+            QString tagString = query.value(2).toString();
+            qDebug() << "Encrypted Password: " << encryptedText;
+            qDebug() << "IV: " << ivString;
+            qDebug() << "Tag: " << tagString;
+
+            // Decrypt the password
+            decryptedPassword = aes_GCM_DECRYPT(encryptedText, ivString, tagString);
+        }
+    } else {
+        qDebug() << "Query execution error: " << query.lastError();
+    }
+    return decryptedPassword;
 }

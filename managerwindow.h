@@ -46,6 +46,7 @@ private slots:
 private:
     std::tuple<QString, QString, QString> aes_GCM_ENCRYPT(const QString &plaintext);
      std::tuple<QString, QString, QString> Get_Database_encryption_data();
+    QString Get_Decrypted_Password(int row);
 
     void addRecord(const QString &appName, const QString &username, const QString &password, const QString &url);
     void clearData();
