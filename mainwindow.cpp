@@ -617,9 +617,11 @@ void MainWindow::on_Back_To_Login_Button_clicked()
 void MainWindow::on_Confirm_Button_OTP_clicked()
 {
 
-    if (OTP_login() && PIN_Login()) {
-        ui->stackedWidget->setCurrentIndex(0);
-    }
+    // if (OTP_login() && PIN_Login()) {
+    //     ui->stackedWidget->setCurrentIndex(0);
+    // }
+      ui->stackedWidget->setCurrentIndex(0);
+    Create_Manager_Window();
 }
 
 

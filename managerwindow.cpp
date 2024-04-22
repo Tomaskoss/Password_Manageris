@@ -66,7 +66,6 @@ ManagerWindow::ManagerWindow(const QString &login_name,MainWindow *mainWindow)
         qDebug() << "Query execution error:" << query.lastError().text();
     }
 
-
 }
 
 ManagerWindow::~ManagerWindow()
@@ -142,11 +141,7 @@ void ManagerWindow::refreshTable() {
         qDebug() << "Failed to create QSqlQueryModel object.";
     }
     // Iterate over the model data
-    for (int row = 0; row < model->rowCount(); ++row) {
-        QString decryptedPassword = Get_Decrypted_Password(row); // Get decrypted password for the current row
-        // Update the model data with decrypted password
-        model->setData(model->index(row, 3), decryptedPassword); // Assuming password column is at index 3
-    }
+
 
     // Set the model for the table view
     ui->tableView->setModel(model);
@@ -272,15 +267,21 @@ void ManagerWindow::on_Confirm_Button_clicked()
     }
     clearData();
     refreshTable();
+    ui->password_Line->setEchoMode(QLineEdit::Password);
 
 }
 
 void ManagerWindow::updateRecord(const QString &appName, const QString &username, const QString &password, const QString &url, const QString &id){
     QSqlQuery query;
+
+    auto [encryptedPassword, iv, tag] = aes_GCM_ENCRYPT(password);
+
     QString updateQueryString = "UPDATE `passwordmanager`.`" + login_name + "_password_data` "
                                                                             "SET `Name of APP` = ?, "
                                                                             "`Username` = ?, "
                                                                             "`Password` = ?, "
+                                                                            "`IV` = ?, "
+                                                                            "`Tag` = ?, "
                                                                             "`URL` = ?, "
                                                                             "`log` = NOW() "
                                                                             "WHERE `ID` = ?";
@@ -290,7 +291,9 @@ void ManagerWindow::updateRecord(const QString &appName, const QString &username
         // Bind values to placeholders
         query.addBindValue(appName);
         query.addBindValue(username);
-        query.addBindValue(password);
+        query.addBindValue(encryptedPassword); // Updated to use encrypted password
+        query.addBindValue(iv); // Bind IV
+        query.addBindValue(tag); // Bind Tag
         query.addBindValue(url);
         query.addBindValue(id);
 
@@ -343,19 +346,24 @@ void ManagerWindow::addRecord(const QString &appName, const QString &username, c
 
 void ManagerWindow::on_show_Password_Button_clicked()
 {
-    passwordsVisible = !passwordsVisible;
+   // passwordsVisible = !passwordsVisible;
     // Refresh the table view to reflect the updated visibility
-        ui->tableView->viewport()->update();
-
-
+      //  ui->tableView->viewport()->update();
+    auto encryptionData = Get_Database_encryption_data();
+    QString ivString= std::get<0>(encryptionData);
+    QString encryptedText= std::get<1>(encryptionData);
+    QString tagString= std::get<2>(encryptionData);
+    QString decryptedText= aes_GCM_DECRYPT(ivString,encryptedText,tagString);
+    qDebug()<<"decrypted text:"<< decryptedText;
+    ui->password_Line->setText(decryptedText);
+    on_actionChange_triggered();
 
 
 
 }
 
 
-void ManagerWindow::on_show_Password_Edit_Button_clicked()
-{
+void ManagerWindow::on_show_Password_Edit_Button_clicked(){
     // Toggle the visibility of passwords
     passwordsVisible = !passwordsVisible;
 
@@ -366,6 +374,7 @@ void ManagerWindow::on_show_Password_Edit_Button_clicked()
         // If passwords are not visible, set echo mode to Password
         ui->password_Line->setEchoMode(QLineEdit::Password);
     }
+    passwordsVisible=false;
 }
 
 void ManagerWindow::clearData(){
@@ -611,7 +620,7 @@ std::tuple<QString, QString, QString> ManagerWindow::Get_Database_encryption_dat
     QString ivString;
     QString tagString;
     QString encryptedText;
-    query.prepare("SELECT Password, IV, Tag FROM `passwordmanager`.`testovaniescryptupokus1_password_data` WHERE id = :id");
+    query.prepare("SELECT Password, IV, Tag FROM `passwordmanager`.`" + login_name + "_password_data` WHERE id = :id");
     query.bindValue(":id", selectedRowID);
     if(query.exec()) {
         if (query.next()) {
@@ -629,29 +638,3 @@ std::tuple<QString, QString, QString> ManagerWindow::Get_Database_encryption_dat
 }
 
 
-QString ManagerWindow::Get_Decrypted_Password(int row) {
-    QSqlQuery query;
-    QString decryptedPassword;
-    // Assuming the ID column is at index 0 in the model
-    QVariant data = model->data(model->index(row, 0));
-    QString id = data.toString();
-
-    query.prepare("SELECT Password, IV, Tag FROM `passwordmanager`.`testovaniescryptupokus1_password_data` WHERE id = :id");
-    query.bindValue(":id", id);
-    if(query.exec()) {
-        if (query.next()) {
-            QString encryptedText = query.value(0).toString();
-            QString ivString = query.value(1).toString();
-            QString tagString = query.value(2).toString();
-            qDebug() << "Encrypted Password: " << encryptedText;
-            qDebug() << "IV: " << ivString;
-            qDebug() << "Tag: " << tagString;
-
-            // Decrypt the password
-            decryptedPassword = aes_GCM_DECRYPT(encryptedText, ivString, tagString);
-        }
-    } else {
-        qDebug() << "Query execution error: " << query.lastError();
-    }
-    return decryptedPassword;
-}
