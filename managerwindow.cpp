@@ -78,7 +78,7 @@ void ManagerWindow::on_LogOut_Button_clicked()
 {
 
     close();
-
+    logging("log out");
     // Show the existing MainWindow
     if (mainWindow) {
         mainWindow->show();
@@ -170,6 +170,7 @@ void ManagerWindow::on_actionRemove_triggered()
             ID_Column=NULL;
             resetAutoIncrementAndReindex();
             refreshTable();
+            logging("Removed record");
 
         } else {
             qDebug() << "Error removing row:" << query.lastError().text();
@@ -301,6 +302,7 @@ void ManagerWindow::updateRecord(const QString &appName, const QString &username
         if (query.exec()) {
             qDebug() << "Record updated successfully.";
             refreshTable(); // Refresh the table after updating
+            logging("UPDATED RECORD");
         } else {
             qDebug() << "Error updating record:" << query.lastError().text();
         }
@@ -312,7 +314,6 @@ void ManagerWindow::addRecord(const QString &appName, const QString &username, c
 {
     // Encrypt the password
     auto [encryptedPassword, iv, tag] = aes_GCM_ENCRYPT(password);
-
     QSqlQuery query;
     QString insertQueryString = "INSERT INTO `passwordmanager`.`" + login_name + "_password_data` "
                                                                                  "(`Name of APP`, `Username`, `Password`, `URL`, `log`, `IV`, `Tag`) "
@@ -333,6 +334,8 @@ void ManagerWindow::addRecord(const QString &appName, const QString &username, c
             qDebug() << "Record added successfully.";
             refreshTable(); // Refresh the table after adding
             query.finish();
+            logging("ADDED RECORD");
+
 
         } else {
             qDebug() << "Error adding record:" << query.lastError().text();
@@ -505,7 +508,7 @@ void ManagerWindow::on_generate_Button_clicked()
     size_t passwordLenght= ui->spinBox->value();
     generateRandomPassword(password,passwordLenght);
     ui->password_generator_line->setText(password);
-
+    logging("Generated password");
 }
 
 void ManagerWindow::on_close_Button_clicked()
@@ -637,4 +640,24 @@ std::tuple<QString, QString, QString> ManagerWindow::Get_Database_encryption_dat
     return std::make_tuple(ivString, encryptedText, tagString);
 }
 
+void ManagerWindow::logging(QString logType){
+    QSqlQuery query;
 
+    // Get current timestamp
+    QDateTime currentDateTime = QDateTime::currentDateTime();
+    QString timestamp = currentDateTime.toString(Qt::ISODate);
+
+    // Construct the INSERT query
+    QString queryString = "INSERT INTO `passwordmanager`.`" + login_name + "_log_data` (timestamp, log) VALUES (:timestamp, :log)";
+    query.prepare(queryString);
+    query.bindValue(":timestamp", timestamp);
+    query.bindValue(":log", logType);
+
+    // Execute the query
+    if (!query.exec()) {
+        qDebug() << "Error inserting log for" << logType << ":" << query.lastError().text();
+        return;
+    }
+
+    qDebug() << "Successfully logged '" << logType << "' action with timestamp" << timestamp;
+}

@@ -180,6 +180,7 @@ void MainWindow::on_Confirm_Button_clicked()
 void MainWindow::create_Table_And_Store_Password(){
 
     QString table_name = usernameL+"_password_data";
+    QString table_name_log= usernameL+"_log_data";
     uint8_t salt[SALTLEN];
     generate_Random_Salt(salt, SALTLEN);
 
@@ -189,6 +190,7 @@ void MainWindow::create_Table_And_Store_Password(){
         QString encodedPasswordHash = Argon_KDF(passwordM, salt);
 
         create_User_Table(table_name);
+        create_User_Table_For_Logs(table_name_log);
         if (!insert_Argon2id_KDF(usernameL, encodedPasswordHash, algorithm_type, email,pin)) {
             qDebug() << "Error inserting Argon2id KDF.";
             return;
@@ -201,6 +203,7 @@ void MainWindow::create_Table_And_Store_Password(){
         QByteArray saltByteArray(reinterpret_cast<const char*>(salt), SALTLEN);
         QString algorithm_type = ui->comboBox->currentText();
         create_User_Table(table_name);
+        create_User_Table_For_Logs(table_name_log);
         QString encodedPasswordHash = PBKDF2_KDF(passwordM,salt);
         if (!insert_PBKDF2_KDF(usernameL, encodedPasswordHash, algorithm_type, email,iterations,saltByteArray,pin)) {
             qDebug() << "Error inserting Argon2id KDF.";
@@ -210,7 +213,7 @@ void MainWindow::create_Table_And_Store_Password(){
 
     }
     else if(ui->comboBox->currentText()=="Scrypt"){
-
+        create_User_Table_For_Logs(table_name_log);
         create_User_Table(table_name);
          QString algorithm_type = ui->comboBox->currentText();
         QByteArray saltByteArray(reinterpret_cast<const char*>(salt), SALTLEN);
@@ -726,4 +729,26 @@ void MainWindow::create_Database_Connection(){
     }
     else{qDebug() << "Database opened successfully";}
 
+}
+
+
+bool MainWindow::create_User_Table_For_Logs(const QString& table_name_log){
+    QSqlQuery query;
+    if (!dataBase.isOpen()) {
+        qDebug() << "Error: Failed to open database:" << dataBase.lastError().text();
+        return false;
+    }
+
+    // Define the SQL statement for creating the table
+    QString createTableQuery = "CREATE TABLE " + table_name_log + " ("
+                                                              "timestamp TIMESTAMP NOT NULL,"
+                                                              "log VARCHAR(64) NOT NULL)";
+
+    // Execute the SQL statement
+    if (!query.exec(createTableQuery)) {
+        qDebug() << "Error creating table: " << query.lastError().text();
+        return false;
+    }
+
+    return true;
 }

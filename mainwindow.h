@@ -56,23 +56,31 @@ private:
     void Create_Manager_Window();
     bool validate_Register_Credentials();
     bool is_Username_Available(const QString& username);
-    void create_Database_Connection();
-    void create_Table_And_Store_Password();
-    void generate_Random_Salt(uint8_t *salt, size_t saltSize);
+
+
+
     void register_User();
     bool PIN_Login();
-    QString getPIN_Login();
+    bool OTP_login();
 
+    QString getPIN_Login();
     void clear_Data();
-    bool  create_User_Table(const QString &table_name);
+
+    void create_Database_Connection();
+    void create_Table_And_Store_Password();
+    bool create_User_Table(const QString &table_name);
+    bool create_User_Table_For_Logs(const QString& table_name_log);
+
     bool is_Valid_Email(QString &email);
     bool generate_Random_Secret(QByteArray &secret, int length);
     void generate_Random_Password(std::string& password, size_t passwordLength);
+    void generate_Random_Salt(uint8_t *salt, size_t saltSize);
+
     bool insert_Argon2id_KDF(const QString& username, const QString& hashedPassword, const QString& algorithm_type, const QString& email, const QString &pin);
     bool insert_PBKDF2_KDF(const QString& username, const QString& hashedPassword, const QString& algorithm_type, const QString& email, const int& iterations, const QByteArray& saltByteArray, const QString &pin);
     bool insert_Scrypt_KDF(const QString& username,const QString& hashedPassword,const QString& algorithm_type,const QString& email,const uint64_t& N,const uint64_t& r,const uint64_t& p,const uint64_t maxmemory , const QByteArray& saltByteArray,const QString& pin);
     QString base32_Encode(const QByteArray &data);
-    bool OTP_login();
+
     //QSqlDatabase dataBase;
     QSqlQuery query();
     QString generatedTOTP;
