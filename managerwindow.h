@@ -43,6 +43,8 @@ private slots:
 
     void on_close_Button_clicked();
 
+    void on_button_To_Logs_clicked();
+
 private:
     std::tuple<QString, QString, QString> aes_GCM_ENCRYPT(const QString &plaintext);
      std::tuple<QString, QString, QString> Get_Database_encryption_data();
@@ -57,6 +59,7 @@ private:
     Ui::ManagerWindow *ui;
     QString login_name;
     QSqlQueryModel *model;
+    QSqlQueryModel *logModel;
     QString selectedRowID;
     QSqlQuery query;
     QString ID_Column;

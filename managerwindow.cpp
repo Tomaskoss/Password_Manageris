@@ -50,6 +50,7 @@ ManagerWindow::ManagerWindow(const QString &login_name,MainWindow *mainWindow)
      ui(new Ui::ManagerWindow),
     login_name(login_name),
     model(new QSqlQueryModel(this)),
+    logModel(new QSqlQueryModel(this)),
     mainWindow(mainWindow)
 {
     ui->setupUi(this);
@@ -661,3 +662,16 @@ void ManagerWindow::logging(QString logType){
 
     qDebug() << "Successfully logged '" << logType << "' action with timestamp" << timestamp;
 }
+
+void ManagerWindow::on_button_To_Logs_clicked()
+{
+    // Set the logModel as the model for the QTableView
+    ui->tableView->setModel(logModel);
+
+    // Retrieve log data from the MySQL database
+    logModel->setQuery("SELECT * FROM `passwordmanager`.`"+login_name+"_log_data`");
+    if (logModel->lastError().isValid()) {
+        qDebug() << "Error loading log data:" << logModel->lastError().text();
+    }
+}
+
