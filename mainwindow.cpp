@@ -157,12 +157,17 @@ void MainWindow::on_LogIn_Button_clicked()
             }   }
         }
     }
-    qDebug()<<"verification succesfull";
+
 
 }
 
 void MainWindow::on_Back_Button_To_Login_clicked()
 {
+    ui->line_login->clear();
+    ui->line_confirm_password->clear();
+    ui->line_master_password->clear();
+    ui->line_email->clear();
+    ui->line_pin->clear();
     ui->stackedWidget->setCurrentIndex(0);
 
 }
@@ -240,7 +245,7 @@ bool MainWindow::validate_Register_Credentials(){
     passwordM   = ui->line_master_password->text();
     QString confirm_password    = ui->line_confirm_password->text();
     pin = ui->line_pin->text();
-    email      = ui->Email->text();
+    email      = ui->line_email->text();
 
     if(usernameL.length()<=3){
         ui->status_message_reg->setText("Username is too short");
@@ -307,7 +312,7 @@ void MainWindow::register_User(){
 }
 
 bool MainWindow::is_Valid_Email(QString &email) {
-    QRegularExpression rx("\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,4}\\b", QRegularExpression::CaseInsensitiveOption);
+    QRegularExpression rx("\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\b", QRegularExpression::CaseInsensitiveOption);
     QValidator *validator = new QRegularExpressionValidator(rx, this);
     int pos = 0;
     return validator->validate(email, pos) == QValidator::Acceptable;
@@ -553,7 +558,7 @@ void MainWindow::Generate_TOTP(QString Login_email){
 
     // Send TOTP via email
     qDebug()<<"generated totp:"<<generatedTOTP;
-   // sendEmail(generatedTOTP, Login_email);
+    send_Email(generatedTOTP, Login_email);
 }
 
 void MainWindow::send_Email(const QString &totp, const QString &recipientEmail) {
@@ -614,17 +619,21 @@ void MainWindow::Create_Manager_Window(){
 
 void MainWindow::on_Back_To_Login_Button_clicked()
 {
+    ui->otp_line->clear();
+    ui->pin_line->clear();
+
     ui->stackedWidget->setCurrentIndex(0);
 }
 
 void MainWindow::on_Confirm_Button_OTP_clicked()
 {
 
-    // if (OTP_login() && PIN_Login()) {
-    //     ui->stackedWidget->setCurrentIndex(0);
-    // }
-      ui->stackedWidget->setCurrentIndex(0);
-    Create_Manager_Window();
+     if (OTP_login() && PIN_Login()) {
+         ui->stackedWidget->setCurrentIndex(0);
+          Create_Manager_Window();
+     }
+     ui->otp_label->setText("Wrong PIN or OTP");
+
 }
 
 
@@ -632,11 +641,8 @@ bool MainWindow::PIN_Login(){
     QString enteredPIN= ui->pin_line->text();
     QString storedPIN= getPIN_Login();
 
-
-
     if(enteredPIN==storedPIN){
         ui->pin_line->clear();
-        Create_Manager_Window();
         return true;
     }
     else{

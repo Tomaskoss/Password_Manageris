@@ -293,11 +293,25 @@ gridline-color: rgb(255, 255, 255);
        <string>Logs</string>
       </property>
      </widget>
+     <widget class="QPushButton" name="Back_To_Records">
+      <property name="geometry">
+       <rect>
+        <x>670</x>
+        <y>530</y>
+        <width>95</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Back</string>
+      </property>
+     </widget>
      <zorder>background_picture</zorder>
      <zorder>tableView</zorder>
      <zorder>LogOut_Button</zorder>
      <zorder>show_Password_Button</zorder>
      <zorder>button_To_Logs</zorder>
+     <zorder>Back_To_Records</zorder>
     </widget>
     <widget class="QWidget" name="Change_page">
      <widget class="QPushButton" name="Back_Button">

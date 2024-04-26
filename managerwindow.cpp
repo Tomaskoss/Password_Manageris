@@ -56,7 +56,7 @@ ManagerWindow::ManagerWindow(const QString &login_name,MainWindow *mainWindow)
     ui->setupUi(this);
     setWindowFlags(windowFlags() | Qt::Window);
     ui->stackedWidget->setCurrentIndex(0);
-
+    ui->Back_To_Records->hide();
 
     query.prepare("SELECT * FROM `passwordmanager`.`"+login_name+"_password_data`");
     if (query.exec()) {
@@ -72,6 +72,8 @@ ManagerWindow::ManagerWindow(const QString &login_name,MainWindow *mainWindow)
 ManagerWindow::~ManagerWindow()
 {
     delete ui;
+    delete model;
+    delete logModel;
 
 }
 
@@ -673,5 +675,15 @@ void ManagerWindow::on_button_To_Logs_clicked()
     if (logModel->lastError().isValid()) {
         qDebug() << "Error loading log data:" << logModel->lastError().text();
     }
+    ui->Back_To_Records->show();
+}
+
+
+void ManagerWindow::on_Back_To_Records_clicked()
+{
+    ui->tableView->setModel(model);
+
+    ui->Back_To_Records->hide();
+
 }
 
