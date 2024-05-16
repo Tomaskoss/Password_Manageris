@@ -36,7 +36,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="Login_Page">
      <widget class="QLabel" name="status_message_log">
@@ -514,7 +514,7 @@
        <string>Confirm password</string>
       </property>
      </widget>
-     <widget class="QLineEdit" name="Email">
+     <widget class="QLineEdit" name="line_email">
       <property name="geometry">
        <rect>
         <x>220</x>
@@ -569,7 +569,7 @@
      <zorder>status_message_reg</zorder>
      <zorder>line_master_password</zorder>
      <zorder>line_confirm_password</zorder>
-     <zorder>Email</zorder>
+     <zorder>line_email</zorder>
      <zorder>line_pin</zorder>
     </widget>
     <widget class="QWidget" name="Encrypting_Page">

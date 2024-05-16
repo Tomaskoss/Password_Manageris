@@ -19,6 +19,8 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Sql)
 find_package(Qt6 REQUIRED COMPONENTS Core )
 find_package(OpenSSL REQUIRED)
+find_package(Qt6 REQUIRED COMPONENTS Network)
+
 
 
 
@@ -67,8 +69,6 @@ else()
     endif()
 endif()
 
-
-
     include_directories("${PROJECT_FOLDER}\\libs\\argon2")
     include_directories("${PROJECT_FOLDER}\\libs\\argon2\\include")
     link_directories("${PROJECT_FOLDER}\\libs\\argon2")
@@ -100,10 +100,9 @@ endif()
     link_libraries("${PROJECT_FOLDER}\\libs\\QtSmtpMime\\bin")
     target_link_libraries(PasswordManageris PRIVATE "${PROJECT_FOLDER}\\libs\\QtSmtpMime\\bin\\libQtSmtpMime.dll")
 
-
     target_compile_features(PasswordManageris PRIVATE cxx_range_for)
 
-
+    target_link_libraries(PasswordManageris PRIVATE Qt6::Network)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

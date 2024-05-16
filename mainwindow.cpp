@@ -116,20 +116,22 @@ void MainWindow::on_LogIn_Button_clicked()
             {
                 // Passwords match
                 qDebug() << "Login successful";
-                 Generate_TOTP(Login_email);
+
                  ui->stackedWidget->setCurrentIndex(3);
+                Generate_TOTP(Login_email);
             }
         }
         else if (algorithm_type=="PBKDF2"){
                 // Passwords do not match
-                PKCS5_PBKDF2_HMAC(passwordL_char,passwordL.length(),salt,SALTLEN,iterations,EVP_sha512(),HASHLEN,generated_hash);
+                PKCS5_PBKDF2_HMAC(passwordL_char,passwordL.length(),salt,SALTLEN,iterations,EVP_sha256(),HASHLEN,generated_hash);
                 // Convert passwordM QString to QByteArray
                 QString generatedHashStr = QByteArray(reinterpret_cast<const char*>(generated_hash), HASHLEN).toHex();
                 if (generatedHashStr==passwordM_char) {
                     // Passwords match
                     qDebug() << "Login successful";
-                     Generate_TOTP(Login_email);
+
                      ui->stackedWidget->setCurrentIndex(3);
+                     Generate_TOTP(Login_email);
 
                     //qDebug()<<"variables "<<usernameL<<passwordM_char<<passwordL_char<<passwordL_str<<passwordM_str<<salt<<generated_hash<<iterations;
                 }
@@ -146,10 +148,9 @@ void MainWindow::on_LogIn_Button_clicked()
                     if(generatedHashStr==passwordM_char){
                          // Passwords match
                          qDebug() << "Login successful";
-                          Generate_TOTP(Login_email);
-                         //CreateManagerWindow();
-                          ui->stackedWidget->setCurrentIndex(3);
-                        // qDebug()<<"variables "<<usernameL<<passwordM_char<<passwordL_char<<passwordL_str<<passwordM_str<<salt<<generated_hash<<iterations;
+
+                        ui->stackedWidget->setCurrentIndex(3);
+                        Generate_TOTP(Login_email);
 
                     }
                     else{
@@ -223,10 +224,10 @@ void MainWindow::create_Table_And_Store_Password(){
          QString algorithm_type = ui->comboBox->currentText();
         QByteArray saltByteArray(reinterpret_cast<const char*>(salt), SALTLEN);
         QString encodedPasswordHash = Scrypt_KDF(passwordM,salt);
-        constexpr uint64_t N_ITERATIONS = 2048;
-        constexpr uint64_t BLOCK_SIZE = 1;
+        constexpr uint64_t N_ITERATIONS = 16384 ;
+        constexpr uint64_t BLOCK_SIZE = 8;
         constexpr uint64_t PARALLELISM_FACTOR = 1;
-        constexpr uint64_t MAX_MEMORY = 1024 * 1024;
+        constexpr uint64_t MAX_MEMORY = 512 * N_ITERATIONS* BLOCK_SIZE* PARALLELISM_FACTOR;
         const uint64_t N = N_ITERATIONS;
         const uint64_t r = BLOCK_SIZE;
         const uint64_t p = PARALLELISM_FACTOR;
@@ -440,10 +441,10 @@ QString MainWindow::Scrypt_KDF(const QString& password, const uint8_t* salt){
     QString algorithm_type;
     uint32_t pwdlen = passwordM.size();
     // Define named constants for parameters
-    constexpr uint64_t N_ITERATIONS = 2048;
-    constexpr uint64_t BLOCK_SIZE = 1;
+    constexpr uint64_t N_ITERATIONS = 16384;
+    constexpr uint64_t BLOCK_SIZE = 8;
     constexpr uint64_t PARALLELISM_FACTOR = 1;
-    constexpr uint64_t MAX_MEMORY = 1024 * 1024;
+    constexpr uint64_t MAX_MEMORY = 512 * N_ITERATIONS* BLOCK_SIZE* PARALLELISM_FACTOR;
     const uint64_t N = N_ITERATIONS;
     const uint64_t r = BLOCK_SIZE;
     const uint64_t p = PARALLELISM_FACTOR;

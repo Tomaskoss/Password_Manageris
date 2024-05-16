@@ -10,6 +10,8 @@
 #include <QSqlQueryModel>
 #include <QStandardItemModel> // Add this include statement
 
+
+
 #include <QStyledItemDelegate>
 #include "openssl/evp.h"
 #include <QMessageBox> // Include the necessary header file
@@ -60,8 +62,10 @@ ManagerWindow::ManagerWindow(const QString &login_name,MainWindow *mainWindow)
 
     query.prepare("SELECT * FROM `passwordmanager`.`"+login_name+"_password_data`");
     if (query.exec()) {
+        logging("Logged in");
         model->setQuery(std::move(query));
         refreshTable();
+
 
     } else {
         qDebug() << "Query execution error:" << query.lastError().text();
@@ -235,7 +239,6 @@ void ManagerWindow::resetAutoIncrementAndReindex()
 void ManagerWindow::on_actionChange_triggered()
 {
     if (!selectedRowID.isEmpty()) { // Check if a row is selected
-            resetAutoIncrementAndReindex();
         ui->stackedWidget->setCurrentIndex(1); // Change the index to 1
     }
     else{
@@ -248,6 +251,9 @@ void ManagerWindow::on_Back_Button_clicked()
 {
     ui->stackedWidget->setCurrentIndex(0);
     clearData();
+    selectedRowID.clear();
+    passwordsVisible=false;
+
 }
 
 
@@ -305,7 +311,7 @@ void ManagerWindow::updateRecord(const QString &appName, const QString &username
         if (query.exec()) {
             qDebug() << "Record updated successfully.";
             refreshTable(); // Refresh the table after updating
-            logging("UPDATED RECORD");
+            logging("Updated record");
         } else {
             qDebug() << "Error updating record:" << query.lastError().text();
         }
@@ -337,7 +343,7 @@ void ManagerWindow::addRecord(const QString &appName, const QString &username, c
             qDebug() << "Record added successfully.";
             refreshTable(); // Refresh the table after adding
             query.finish();
-            logging("ADDED RECORD");
+            logging("Added record");
 
 
         } else {
@@ -352,9 +358,32 @@ void ManagerWindow::addRecord(const QString &appName, const QString &username, c
 
 void ManagerWindow::on_show_Password_Button_clicked()
 {
-   // passwordsVisible = !passwordsVisible;
-    // Refresh the table view to reflect the updated visibility
-      //  ui->tableView->viewport()->update();
+    if (selectedRowID.isEmpty()) {
+        qDebug()<<"rowid for show:"<<selectedRowID;
+        qDebug()<<"No row selected nothing to show";
+    }
+    else{
+        auto encryptionData = Get_Database_encryption_data();
+        QString ivString= std::get<0>(encryptionData);
+        QString encryptedText= std::get<1>(encryptionData);
+        QString tagString= std::get<2>(encryptionData);
+        QString decryptedText= aes_GCM_DECRYPT(ivString,encryptedText,tagString);
+        qDebug()<<"decrypted text:"<< decryptedText;
+        ui->password_Line->setText(decryptedText);
+        on_actionChange_triggered();
+    }
+
+
+
+
+}
+
+
+void ManagerWindow::on_show_Password_Edit_Button_clicked(){
+
+    // Toggle the visibility of passwords
+    passwordsVisible = !passwordsVisible;
+
     auto encryptionData = Get_Database_encryption_data();
     QString ivString= std::get<0>(encryptionData);
     QString encryptedText= std::get<1>(encryptionData);
@@ -366,13 +395,6 @@ void ManagerWindow::on_show_Password_Button_clicked()
 
 
 
-}
-
-
-void ManagerWindow::on_show_Password_Edit_Button_clicked(){
-    // Toggle the visibility of passwords
-    passwordsVisible = !passwordsVisible;
-
     if (passwordsVisible) {
         // If passwords are now visible, set echo mode to Normal
         ui->password_Line->setEchoMode(QLineEdit::Normal);
@@ -380,7 +402,7 @@ void ManagerWindow::on_show_Password_Edit_Button_clicked(){
         // If passwords are not visible, set echo mode to Password
         ui->password_Line->setEchoMode(QLineEdit::Password);
     }
-    passwordsVisible=false;
+
 }
 
 void ManagerWindow::clearData(){
@@ -676,6 +698,7 @@ void ManagerWindow::on_button_To_Logs_clicked()
         qDebug() << "Error loading log data:" << logModel->lastError().text();
     }
     ui->Back_To_Records->show();
+    ui->button_To_Logs->hide();
 }
 
 
@@ -684,6 +707,13 @@ void ManagerWindow::on_Back_To_Records_clicked()
     ui->tableView->setModel(model);
 
     ui->Back_To_Records->hide();
+    ui->button_To_Logs->show();
+
+}
+
+
+void ManagerWindow::on_start_server_clicked()
+{
 
 }
 
