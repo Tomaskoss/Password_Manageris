@@ -712,7 +712,7 @@ void ManagerWindow::on_Back_To_Records_clicked()
 }
 
 
-void ManagerWindow::on_start_server_clicked()
+void ManagerWindow::on_server_start_clicked()
 {
 
 }

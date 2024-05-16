@@ -36,7 +36,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="Table_page">
      <widget class="QTableView" name="tableView">
@@ -306,12 +306,40 @@ gridline-color: rgb(255, 255, 255);
        <string>Back</string>
       </property>
      </widget>
+     <widget class="QPushButton" name="server_start">
+      <property name="geometry">
+       <rect>
+        <x>250</x>
+        <y>10</y>
+        <width>95</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Server</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="klient_start">
+      <property name="geometry">
+       <rect>
+        <x>360</x>
+        <y>10</y>
+        <width>95</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Klient</string>
+      </property>
+     </widget>
      <zorder>background_picture</zorder>
      <zorder>tableView</zorder>
      <zorder>LogOut_Button</zorder>
      <zorder>show_Password_Button</zorder>
      <zorder>button_To_Logs</zorder>
      <zorder>Back_To_Records</zorder>
+     <zorder>server_start</zorder>
+     <zorder>klient_start</zorder>
     </widget>
     <widget class="QWidget" name="Change_page">
      <widget class="QPushButton" name="Back_Button">
