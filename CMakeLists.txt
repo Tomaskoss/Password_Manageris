@@ -41,6 +41,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         managerwindow.h managerwindow.cpp managerwindow.ui
         pictures.qrc
         dialog_generator.h dialog_generator.cpp dialog_generator.ui
+        dialog_client_site.h dialog_client_site.cpp dialog_client_site.ui
+        dialog_server.h dialog_server.cpp dialog_server.ui
+
+
 
 
 

@@ -63,6 +63,7 @@ void MainWindow::on_Quit_Button_clicked()
 
 void MainWindow::on_LogIn_Button_clicked()
 {
+
      usernameL= ui->line_username->text();
      passwordL = ui->line_password->text();
     size_t passwordL_lenght=passwordL.length();
@@ -629,10 +630,10 @@ void MainWindow::on_Back_To_Login_Button_clicked()
 void MainWindow::on_Confirm_Button_OTP_clicked()
 {
 
-     if (OTP_login() && PIN_Login()) {
+     //if (OTP_login() && PIN_Login()) {
          ui->stackedWidget->setCurrentIndex(0);
           Create_Manager_Window();
-     }
+   //  }
      ui->otp_label->setText("Wrong PIN or OTP");
 
 }

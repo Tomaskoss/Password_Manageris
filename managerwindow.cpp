@@ -1,5 +1,7 @@
 #include "managerwindow.h"
+#include "dialog_client_site.h"
 #include "dialog_generator.h"
+#include "dialog_server.h"
 #include "mainwindow.h"
 #include "openssl/err.h"
 #include "openssl/rand.h"
@@ -715,44 +717,29 @@ void ManagerWindow::on_Back_To_Records_clicked()
 
 void ManagerWindow::on_server_start_clicked()
 {
-    QTcpServer *server = new QTcpServer(this);
-
-    if (!server->listen(QHostAddress::Any, 1234)) {
-        qDebug() << "Server could not start!";
+    // Create a dialog window to display file receiving status
+    Dialog_server dialog(this);
+    dialog.setModal(true);
+    // Show the dialog as modal and wait for it to be closed
+    if (dialog.exec() == QDialog::Accepted) {
+        // If the dialog was accepted, handle accordingly
     } else {
-        qDebug() << "Server started!";
+        // Handle the case where the dialog was not accepted
+        qDebug() << "Dialog was not accepted";
     }
 }
 
-// Define slots to handle various events
-void ManagerWindow::onConnected() {
-    qDebug() << "Connected to server!";
-}
 
-void ManagerWindow::onDisconnected() {
-    qDebug() << "Disconnected from server!";
-}
-
-void ManagerWindow::onReadyRead() {
-    QByteArray data = socket->readAll();
-    qDebug() << "Received data:" << data;
-}
-
-void ManagerWindow::onError(QAbstractSocket::SocketError socketError) {
-    qDebug() << "Socket error:" << socketError;
-}
 void ManagerWindow::on_klient_start_clicked()
 {
-    // Initialize a QTcpSocket object
-    socket = new QTcpSocket(this);
-
-    // Connect signals emitted by the socket to slots for handling events
-    connect(socket, &QTcpSocket::connected, this, &ManagerWindow::onConnected);
-    connect(socket, &QTcpSocket::disconnected, this, &ManagerWindow::onDisconnected);
-    connect(socket, &QTcpSocket::readyRead, this, &ManagerWindow::onReadyRead);
-    //connect(socket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error),this, &ManagerWindow::onError);
-
-    // Attempt to connect to the server
-    socket->connectToHost("server_address", 1234); // Replace "server_address" with the actual server address
+    Dialog_client_site dialog(this); // Pass a reference to ManagerWindow
+    dialog.setModal(true); // Make the dialog modal
+    // Show the dialog as modal and wait for it to be closed
+    if (dialog.exec() == QDialog::Accepted) {
+        // If the dialog was accepted, get the generated password and set it to password_Line
+    } else {
+        // Handle the case where the dialog was not accepted (e.g., if the user clicked "Cancel")
+        qDebug() << "Dialog was not accepted";
+    }
 }
 

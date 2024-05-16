@@ -49,10 +49,6 @@ private slots:
 
     void on_server_start_clicked();
 
-    void onConnected();
-    void onDisconnected();
-    void onReadyRead();
-    void onError(QAbstractSocket::SocketError socketError);
 
 
     void on_klient_start_clicked();
@@ -76,7 +72,7 @@ private:
     QSqlQuery query;
     QString ID_Column;
     MainWindow *mainWindow;
-    QTcpSocket *socket;
+
 };
 
 #endif // MANAGERWINDOW_H
