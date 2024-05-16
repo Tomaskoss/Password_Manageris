@@ -3,6 +3,7 @@
 #include "mainwindow.h"
 #include "openssl/err.h"
 #include "openssl/rand.h"
+#include "qhostaddress.h"
 #include "qsqlerror.h"
 #include "qsqlquery.h"
 #include "ui_managerwindow.h"
@@ -10,7 +11,7 @@
 #include <QSqlQueryModel>
 #include <QStandardItemModel> // Add this include statement
 
-
+#include <QTcpServer>
 
 #include <QStyledItemDelegate>
 #include "openssl/evp.h"
@@ -714,6 +715,44 @@ void ManagerWindow::on_Back_To_Records_clicked()
 
 void ManagerWindow::on_server_start_clicked()
 {
+    QTcpServer *server = new QTcpServer(this);
 
+    if (!server->listen(QHostAddress::Any, 1234)) {
+        qDebug() << "Server could not start!";
+    } else {
+        qDebug() << "Server started!";
+    }
+}
+
+// Define slots to handle various events
+void ManagerWindow::onConnected() {
+    qDebug() << "Connected to server!";
+}
+
+void ManagerWindow::onDisconnected() {
+    qDebug() << "Disconnected from server!";
+}
+
+void ManagerWindow::onReadyRead() {
+    QByteArray data = socket->readAll();
+    qDebug() << "Received data:" << data;
+}
+
+void ManagerWindow::onError(QAbstractSocket::SocketError socketError) {
+    qDebug() << "Socket error:" << socketError;
+}
+void ManagerWindow::on_klient_start_clicked()
+{
+    // Initialize a QTcpSocket object
+    socket = new QTcpSocket(this);
+
+    // Connect signals emitted by the socket to slots for handling events
+    connect(socket, &QTcpSocket::connected, this, &ManagerWindow::onConnected);
+    connect(socket, &QTcpSocket::disconnected, this, &ManagerWindow::onDisconnected);
+    connect(socket, &QTcpSocket::readyRead, this, &ManagerWindow::onReadyRead);
+    //connect(socket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error),this, &ManagerWindow::onError);
+
+    // Attempt to connect to the server
+    socket->connectToHost("server_address", 1234); // Replace "server_address" with the actual server address
 }
 

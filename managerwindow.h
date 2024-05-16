@@ -5,7 +5,7 @@
 #include "qsqlquery.h"
 #include "qsqlquerymodel.h"
 #include <QMainWindow>
-
+#include <QTcpSocket>
 namespace Ui {
 class ManagerWindow;
 }
@@ -49,6 +49,14 @@ private slots:
 
     void on_server_start_clicked();
 
+    void onConnected();
+    void onDisconnected();
+    void onReadyRead();
+    void onError(QAbstractSocket::SocketError socketError);
+
+
+    void on_klient_start_clicked();
+
 private:
     std::tuple<QString, QString, QString> aes_GCM_ENCRYPT(const QString &plaintext);
      std::tuple<QString, QString, QString> Get_Database_encryption_data();
@@ -68,6 +76,7 @@ private:
     QSqlQuery query;
     QString ID_Column;
     MainWindow *mainWindow;
+    QTcpSocket *socket;
 };
 
 #endif // MANAGERWINDOW_H
