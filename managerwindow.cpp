@@ -717,7 +717,7 @@ void ManagerWindow::on_Back_To_Records_clicked()
 void ManagerWindow::on_server_start_clicked()
 {
     // Create a dialog window to display file receiving status
-    Dialog_server dialog(this);
+    Dialog_server dialog(login_name,this);
     dialog.setModal(false);
     // Show the dialog as modal and wait for it to be closed
     if (dialog.exec() == QDialog::Accepted) {

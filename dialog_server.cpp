@@ -1,17 +1,20 @@
 #include "dialog_server.h"
+#include "qsqlerror.h"
+#include "qsqlquery.h"
 #include "ui_dialog_server.h"
 #include <QtNetwork>
 #include <QFileDialog>
-
+#include <QMessageBox>
 #include <QTcpServer>
 #include <QSslSocket>
 #include <QSslKey>
 #include <QSslCertificate>
 #include <QFile>
 
-Dialog_server::Dialog_server(QWidget *parent)
+Dialog_server::Dialog_server(const QString &login_name,QWidget *parent)
     : QDialog(parent),
-    ui(new Ui::Dialog_server)
+    ui(new Ui::Dialog_server),
+    login_name(login_name)
 {
     ui->setupUi(this);
 
@@ -94,6 +97,67 @@ void Dialog_server::on_generate_crt_clicked()
 
 void Dialog_server::on_load_data_clicked()
 {
+    // Read data from JSON file
+    QString filePath = QFileDialog::getOpenFileName(this, "Open JSON File", QDir::homePath(), "JSON Files (*.json)");
+    if (filePath.isEmpty()) {
+        qDebug() << "No file selected.";
+        return;
+    }
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::critical(this, "Error", "Failed to open JSON file: " + file.errorString());
+        return;
+    }
+
+    QByteArray jsonData = file.readAll();
+    file.close();
+
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData);
+    if (!jsonDoc.isArray()) {
+        QMessageBox::critical(this, "Error", "Invalid JSON data format.");
+        return;
+    }
+
+    QJsonArray jsonArray = jsonDoc.array();
+
+    // Connect to the database
+    QSqlDatabase db = QSqlDatabase::database();
+    if (!db.isOpen()) {
+        QMessageBox::critical(this, "Error", "Database connection not open.");
+        return;
+    }
+
+    // Truncate the table
+    QString truncateQuery = "TRUNCATE TABLE `passwordmanager`.`" + login_name + "_password_data`";
+    QSqlQuery truncateSqlQuery;
+    if (!truncateSqlQuery.exec(truncateQuery)) {
+        QMessageBox::critical(this, "Error", "Failed to truncate table: " + truncateSqlQuery.lastError().text());
+        return;
+    }
+
+    // Insert data into the table
+    QSqlQuery insertQuery;
+    insertQuery.prepare("INSERT INTO `passwordmanager`.`" + login_name + "_password_data` (`ID`, `Name of APP`, `Username`, `Password`, `URL`, `log`, `IV`, `Tag`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+
+    foreach (const QJsonValue &value, jsonArray) {
+        QJsonObject obj = value.toObject();
+        insertQuery.addBindValue(obj["ID"].toString());
+        insertQuery.addBindValue(obj["Name of APP"].toString());
+        insertQuery.addBindValue(obj["Username"].toString());
+        insertQuery.addBindValue(obj["Password"].toString());
+        insertQuery.addBindValue(obj["URL"].toString());
+        insertQuery.addBindValue(obj["log"].toString());
+        insertQuery.addBindValue(obj["IV"].toString());
+        insertQuery.addBindValue(obj["Tag"].toString());
+
+        if (!insertQuery.exec()) {
+            QMessageBox::critical(this, "Error", "Failed to insert data into table: " + insertQuery.lastError().text());
+            return;
+        }
+    }
+
+    QMessageBox::information(this, "Success", "Data loaded successfully.");
+
 
 }
-

@@ -17,7 +17,7 @@ class Dialog_server : public QDialog
     Q_OBJECT
 
 public:
-    explicit Dialog_server(QWidget *parent = nullptr);
+    explicit Dialog_server(const QString &login_name, QWidget *parent = nullptr);
     ~Dialog_server();
 
 private slots:
@@ -32,7 +32,7 @@ private slots:
 
 private:
     bool loadSslConfig();
-
+    QString login_name;
     Ui::Dialog_server *ui;
 
 
