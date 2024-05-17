@@ -14,12 +14,10 @@
 
 #include <QFileDialog>
 #include <QMessageBox>
-#include <fstream>
 #include <QProcess>
 
 
 
-#include <fstream>
 Dialog_client_site::Dialog_client_site(const QString &login_name,QWidget *parent) :
     QDialog(parent),
     ui(new Ui::Dialog_client_site),
@@ -111,7 +109,7 @@ void Dialog_client_site::on_table_export_clicked()
     // and you have the login_name variable storing the user's login name
     // Assuming line_login_name is where the user inputs their login name
 
-    QString queryString = "SELECT `ID`, `Name of APP`, `Username`, `Password`, `URL`, `LOG` FROM `" + login_name + "_password_data`;";
+    QString queryString = "SELECT `ID`, `Name of APP`, `Username`, `Password`, `URL`, `log`, `IV`, `Tag` FROM `" + login_name + "_password_data`;";
     QSqlQuery query;
     if (!query.exec(queryString)) {
         QMessageBox::critical(this, "Error", "Failed to execute query: " + query.lastError().text());
@@ -127,7 +125,9 @@ void Dialog_client_site::on_table_export_clicked()
         jsonObject["Username"] = query.value("Username").toString();
         jsonObject["Password"] = query.value("Password").toString();
         jsonObject["URL"] = query.value("URL").toString();
-        jsonObject["LOG"] = query.value("LOG").toString();
+        jsonObject["log"] = query.value("log").toString();
+        jsonObject["IV"] = query.value("IV").toString();
+        jsonObject["Tag"] = query.value("Tag").toString();
         jsonArray.append(jsonObject);
     }
 

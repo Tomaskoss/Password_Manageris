@@ -49,10 +49,10 @@ void Dialog_server::on_start_server_clicked()
     qDebug() << "Current directory:" << currentDirPath;
 
     // Output directory for the JSON file
-    QString outputDirectory = "D:/Password_Manageris/table/";
+    QString outputDirectory = "D:/Password_Manageris/crt/";
 
     // Command to start the OpenSSL server with specified certificate and key, and redirect output to Table_json.json
-    QString command = "openssl s_server -cert " + currentDirPath + "/server-cert.pem -key " + currentDirPath + "/server-key.pem -accept 1234 -quiet > " + outputDirectory + "Table_json.json";
+    QString command = "openssl s_server -cert " + currentDirPath + "/server-cert.pem -key " + currentDirPath + "/server-key.pem -accept 1234 -quiet > " + outputDirectory + "Table_export.json";
 
     // Execute the command in the system shell
     int exitCode = system(command.toStdString().c_str());
@@ -89,5 +89,11 @@ void Dialog_server::on_generate_crt_clicked()
     } else {
         qDebug() << "Chyba při generování certifikátu klienta.";
     }
+}
+
+
+void Dialog_server::on_load_data_clicked()
+{
+
 }
 
