@@ -103,7 +103,10 @@ compile_commands.json
 *_qmlcache.qrc
 qt_build/
 build/
+
+crt/
 /D:/Password_Manageris/crt/
 
 /D:/Password_Manageris/crt/*
+D:\Password_Manageris\crt\*
 
