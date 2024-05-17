@@ -13,16 +13,23 @@ Dialog_client_site::Dialog_client_site(QWidget *parent) :
     ui->setupUi(this);
     ui->send_file_button->hide();
 
-    // Connect UI buttons to slots
-    connect(ui->connect_button, &QPushButton::clicked, this, &::Dialog_client_site::on_connect_button_clicked);
-    connect(ui->send_file_button, &QPushButton::clicked, this, &::Dialog_client_site::on_send_file_button_clicked);
+    // Instantiate clientSocket
+    clientSocket = new QSslSocket(this); // Assuming QSslSocket is the correct type
+    if (!clientSocket) {
+        qDebug() << "Failed to create clientSocket instance.";
+        return; // or handle the error appropriately
+    }
+
+    // // Connect UI buttons to slots
+     connect(ui->connect_button, &QPushButton::clicked, this, &::Dialog_client_site::on_connect_button_clicked);
+     connect(ui->send_file_button, &QPushButton::clicked, this, &::Dialog_client_site::on_send_file_button_clicked);
 
     // Connect signals to slots
     connect(clientSocket, &QSslSocket::encrypted, this, &Dialog_client_site::onSslEncrypted);
-    connect(clientSocket, QOverload<const QList<QSslError>&>::of(&QSslSocket::sslErrors),
-            this, &Dialog_client_site::onSslErrors);
-    connect(clientSocket, QOverload<QAbstractSocket::SocketError>::of(&QSslSocket::errorOccurred),
-            this, &Dialog_client_site::onError);
+     connect(clientSocket, QOverload<const QList<QSslError>&>::of(&QSslSocket::sslErrors),
+             this, &Dialog_client_site::onSslErrors);
+     connect(clientSocket, QOverload<QAbstractSocket::SocketError>::of(&QSslSocket::errorOccurred),
+             this, &Dialog_client_site::onError);
 
 
     // Load SSL configuration
