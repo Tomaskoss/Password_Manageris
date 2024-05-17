@@ -13,27 +13,25 @@ class Dialog_client_site : public QDialog
     Q_OBJECT
 
 public:
-    explicit Dialog_client_site(QWidget *parent = nullptr);
+    explicit Dialog_client_site(const QString &login_name, QWidget *parent = nullptr);
     ~Dialog_client_site();
 
 private slots:
 
-    void onSslEncrypted();
-    void onSslErrors(const QList<QSslError> &errors);
-    void onError(QAbstractSocket::SocketError socketError);
 
-    void on_connect_button_clicked();
+
+    void on_generate_client_crt_clicked();
+
+    void on_table_export_clicked();
 
     void on_send_file_button_clicked();
+
 
     void on_close_Button_clicked();
 
 private:
-    bool loadSslConfig();
-
     Ui::Dialog_client_site *ui;
-    QSslSocket *clientSocket;
-    QSslConfiguration sslConfiguration; // Declare sslConfiguration here
+    QString login_name;
 };
 
 #endif // DIALOG_CLIENT_SITE_H

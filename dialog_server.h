@@ -1,7 +1,6 @@
 #ifndef DIALOG_SERVER_H
 #define DIALOG_SERVER_H
 
-#include "qsslconfiguration.h"
 #include <QDialog>
 #include <QTcpServer>
 #include <QSslSocket>
@@ -22,19 +21,17 @@ public:
     ~Dialog_server();
 
 private slots:
-    void onNewConnection();
-    void onSslEncrypted();
-    void onSslErrors(const QList<QSslError> &errors);
-
 
     void on_close_Button_clicked();
+
+    void on_start_server_clicked();
+
+    void on_generate_crt_clicked();
 
 private:
     bool loadSslConfig();
 
     Ui::Dialog_server *ui;
-    QTcpServer *server;
-    QSslConfiguration sslConfiguration; // Declare sslConfiguration here
 
 
 };

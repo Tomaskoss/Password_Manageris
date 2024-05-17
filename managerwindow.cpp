@@ -726,12 +726,13 @@ void ManagerWindow::on_server_start_clicked()
         // Handle the case where the dialog was not accepted
         qDebug() << "Dialog was not accepted";
     }
+
 }
 
 
 void ManagerWindow::on_klient_start_clicked()
 {
-    Dialog_client_site dialog(this); // Pass a reference to ManagerWindow
+    Dialog_client_site dialog(login_name,this); // Pass a reference to ManagerWindow
     dialog.setModal(false); // Make the dialog modal
     // Show the dialog as modal and wait for it to be closed
     if (dialog.exec() == QDialog::Accepted) {
