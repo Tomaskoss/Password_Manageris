@@ -119,6 +119,19 @@
     <string>Generate crt</string>
    </property>
   </widget>
+  <widget class="QPushButton" name="load_data">
+   <property name="geometry">
+    <rect>
+     <x>380</x>
+     <y>290</y>
+     <width>95</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Load Data</string>
+   </property>
+  </widget>
  </widget>
  <resources>
   <include location="pictures.qrc"/>

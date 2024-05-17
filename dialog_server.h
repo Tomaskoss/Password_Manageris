@@ -28,6 +28,8 @@ private slots:
 
     void on_generate_crt_clicked();
 
+    void on_load_data_clicked();
+
 private:
     bool loadSslConfig();
 
