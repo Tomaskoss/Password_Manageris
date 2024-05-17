@@ -17,20 +17,23 @@ public:
     ~Dialog_client_site();
 
 private slots:
-    void on_connect_button_clicked();
 
-    void onConnected();
-    void onDisconnected();
-    void onReadyRead();
+    void onSslEncrypted();
+    void onSslErrors(const QList<QSslError> &errors);
     void onError(QAbstractSocket::SocketError socketError);
 
-    void on_close_Button_clicked();
+    void on_connect_button_clicked();
 
     void on_send_file_button_clicked();
 
+    void on_close_Button_clicked();
+
 private:
+    bool loadSslConfig();
+
     Ui::Dialog_client_site *ui;
-    QTcpSocket *socket;
+    QSslSocket *clientSocket;
+    QSslConfiguration sslConfiguration; // Declare sslConfiguration here
 };
 
 #endif // DIALOG_CLIENT_SITE_H

@@ -3,6 +3,11 @@
 #include <QtNetwork>
 #include <QFileDialog>
 
+#include <QTcpServer>
+#include <QSslSocket>
+#include <QSslKey>
+#include <QSslCertificate>
+#include <QFile>
 
 Dialog_server::Dialog_server(QWidget *parent)
     : QDialog(parent),
@@ -11,16 +16,20 @@ Dialog_server::Dialog_server(QWidget *parent)
 {
     ui->setupUi(this);
 
-    // Attempt to start the server
-    if (!server->listen(QHostAddress::Any, 1234)) {
-        qDebug() << "Server could not start! Error:" << server->errorString();
-        // You might want to handle this error more gracefully, like disabling functionality or providing a message to the user.
-    } else {
-        qDebug() << "Server started!";
-    }
-
-    // Connect the newConnection signal to a slot
+    // Connect server signals to slots
     connect(server, &QTcpServer::newConnection, this, &Dialog_server::onNewConnection);
+
+    // Load SSL configuration
+    if (loadSslConfig()) {
+        // Start the server on a specified port (e.g., 1234)
+        if (server->listen(QHostAddress::Any, 1234)) {
+            qDebug() << "Server started on port 1234.";
+        } else {
+            qDebug() << "Failed to start server: " << server->errorString();
+        }
+    } else {
+        qDebug() << "Failed to load SSL configuration.";
+    }
 }
 
 Dialog_server::~Dialog_server()
@@ -28,49 +37,83 @@ Dialog_server::~Dialog_server()
     delete ui;
 }
 
+bool Dialog_server::loadSslConfig()
+{
+    // Load the server's certificate
+    QFile certFile("D:/Password_Manageris/libs/p2p/server.crt");
+    if (!certFile.open(QIODevice::ReadOnly)) {
+        qDebug() << "Failed to open certificate file.";
+        return false;
+    }
+    QSslCertificate certificate(&certFile);
+    certFile.close();
+
+    // Load the server's private key
+    QFile keyFile("D:/Password_Manageris/libs/p2p/privatekey.key");
+    if (!keyFile.open(QIODevice::ReadOnly)) {
+        qDebug() << "Failed to open key file.";
+        return false;
+    }
+    QSslKey privateKey(&keyFile, QSsl::Rsa);
+    keyFile.close();
+
+    // Set the SSL configuration
+    sslConfiguration.setLocalCertificate(certificate);
+    sslConfiguration.setPrivateKey(privateKey);
+    sslConfiguration.setPeerVerifyMode(QSslSocket::VerifyNone); // Adjust as needed
+    sslConfiguration.setProtocol(QSsl::TlsV1_2);
+
+    return true;
+
+}
+
 void Dialog_server::onNewConnection()
 {
-    // Handle new incoming connections here
-    while (server->hasPendingConnections()) {
-        QTcpSocket *clientSocket = server->nextPendingConnection();
-        qDebug() << "New connection established with client:" << clientSocket->peerAddress().toString();
+    QTcpSocket *clientConnection = server->nextPendingConnection();
+    QSslSocket *sslSocket = qobject_cast<QSslSocket *>(clientConnection);
 
-        // Read file data sent by the client
-        QByteArray file_data;
-        while (clientSocket->bytesAvailable() > 0) {
-            file_data.append(clientSocket->readAll());
-        }
+    if (sslSocket) {
+        // Set the SSL configuration for the socket
+        sslSocket->setSslConfiguration(sslConfiguration);
 
-        // Prompt user for file path
-        QString save_path = getSaveFilePath();
+        // Connect signals to handle SSL events
+        connect(sslSocket, &QSslSocket::encrypted, this, &Dialog_server::onSslEncrypted);
+        connect(sslSocket, QOverload<const QList<QSslError>&>::of(&QSslSocket::sslErrors),
+                this, &Dialog_server::onSslErrors);
 
-        // Save the received file to disk
-        QFile file(save_path);
-        if (file.open(QIODevice::WriteOnly)) {
-            file.write(file_data);
-            file.close();
-            qDebug() << "File received and saved successfully:" << save_path;
-        } else {
-            qDebug() << "Failed to open file for writing:" << file.errorString();
-        }
-
-        // Close the client connection
-        clientSocket->close();
-        clientSocket->deleteLater(); // Cleanup
+        // Start the SSL handshake
+        sslSocket->startServerEncryption();
+    } else {
+        // Handle non-SSL connection (if necessary)
+        qDebug() << "Received a non-SSL connection.";
     }
 }
 
-QString Dialog_server::getSaveFilePath()
+void Dialog_server::onSslEncrypted()
 {
-    return QFileDialog::getSaveFileName(this, tr("Save File"), QDir::homePath());
+    QSslSocket *sslSocket = qobject_cast<QSslSocket *>(sender());
+    if (sslSocket) {
+        qDebug() << "SSL handshake completed.";
+        // Now you can communicate securely with sslSocket
+    }
+}
+
+void Dialog_server::onSslErrors(const QList<QSslError> &errors)
+{
+    QSslSocket *sslSocket = qobject_cast<QSslSocket *>(sender());
+    if (sslSocket) {
+        qDebug() << "SSL errors occurred:";
+        for (const QSslError &error : errors) {
+            qDebug() << error.errorString();
+        }
+
+        // You might want to ignore certain errors for testing purposes
+        // sslSocket->ignoreSslErrors();
+    }
 }
 
 void Dialog_server::on_close_Button_clicked()
 {
-    // Stop the server
-    server->close();
-
-    // Close the dialog window
     close();
 }
 

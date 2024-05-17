@@ -5,7 +5,6 @@
 #include "mainwindow.h"
 #include "openssl/err.h"
 #include "openssl/rand.h"
-#include "qhostaddress.h"
 #include "qsqlerror.h"
 #include "qsqlquery.h"
 #include "ui_managerwindow.h"
@@ -719,7 +718,7 @@ void ManagerWindow::on_server_start_clicked()
 {
     // Create a dialog window to display file receiving status
     Dialog_server dialog(this);
-    dialog.setModal(true);
+    dialog.setModal(false);
     // Show the dialog as modal and wait for it to be closed
     if (dialog.exec() == QDialog::Accepted) {
         // If the dialog was accepted, handle accordingly
@@ -733,7 +732,7 @@ void ManagerWindow::on_server_start_clicked()
 void ManagerWindow::on_klient_start_clicked()
 {
     Dialog_client_site dialog(this); // Pass a reference to ManagerWindow
-    dialog.setModal(true); // Make the dialog modal
+    dialog.setModal(false); // Make the dialog modal
     // Show the dialog as modal and wait for it to be closed
     if (dialog.exec() == QDialog::Accepted) {
         // If the dialog was accepted, get the generated password and set it to password_Line
