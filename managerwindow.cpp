@@ -62,9 +62,6 @@ ManagerWindow::ManagerWindow(const QString &login_name,MainWindow *mainWindow)
     ui->stackedWidget->setCurrentIndex(0);
     ui->Back_To_Records->hide();
 
-
-    QString decryptedtext=chacha20_decrypt("GRZfFz8/","aMjSilEWO5fHzLQH");
-    qDebug()<<"decrypted chacha:"<<decryptedtext;
     query.prepare("SELECT * FROM `passwordmanager`.`"+login_name+"_password_data`");
     if (query.exec()) {
         logging("Logged in");
@@ -137,13 +134,14 @@ void ManagerWindow::refreshTable() {
             ui->tableView->setModel(model);
             // Hide the column containing the row IDs
             ui->tableView->hideColumn(0);
-            // Set the width of the header to x pixels
-            // ui->tableView->setItemDelegateForColumn(3,);
-            ui->tableView->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
-            ui->tableView->horizontalHeader()->resizeSection(3, 350);
-            ui->tableView->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
-            ui->tableView->horizontalHeader()->resizeSection(2, 150);
-            // Set the custom delegate for the password column
+            // Set the headers to resize to contents
+            QHeaderView *header = ui->tableView->horizontalHeader();
+            header->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+            header->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+            header->setSectionResizeMode(3, QHeaderView::ResizeToContents);
+            header->setSectionResizeMode(4, QHeaderView::ResizeToContents);
+            header->setSectionResizeMode(5, QHeaderView::ResizeToContents);
+
             PasswordDelegate *passwordDelegate = new PasswordDelegate(this);
             ui->tableView->setItemDelegateForColumn(3, passwordDelegate); // A
 
@@ -153,12 +151,10 @@ void ManagerWindow::refreshTable() {
     } else {
         qDebug() << "Failed to create QSqlQueryModel object.";
     }
-    // Iterate over the model data
-
 
     // Set the model for the table view
     ui->tableView->setModel(model);
-
+    clearData();
 }
 
 void ManagerWindow::on_actionRemove_triggered()
@@ -241,7 +237,6 @@ void ManagerWindow::resetAutoIncrementAndReindex()
     }
 }
 
-
 void ManagerWindow::on_actionChange_triggered()
 {
     if (!selectedRowID.isEmpty()) { // Check if a row is selected
@@ -252,16 +247,15 @@ void ManagerWindow::on_actionChange_triggered()
     }
 }
 
-
 void ManagerWindow::on_Back_Button_clicked()
 {
     ui->stackedWidget->setCurrentIndex(0);
     clearData();
     selectedRowID.clear();
     passwordsVisible=false;
+    ui->password_Line->setEchoMode(QLineEdit::Password);
 
 }
-
 
 void ManagerWindow::on_Confirm_Button_clicked()
 {
@@ -290,41 +284,84 @@ void ManagerWindow::on_Confirm_Button_clicked()
 void ManagerWindow::updateRecord(const QString &appName, const QString &username, const QString &password, const QString &url, const QString &id){
     QSqlQuery query;
 
-    auto [encryptedPassword, iv, tag] = aes_GCM_ENCRYPT(password);
-
-    QString updateQueryString = "UPDATE `passwordmanager`.`" + login_name + "_password_data` "
-                                                                            "SET `Name of APP` = ?, "
-                                                                            "`Username` = ?, "
-                                                                            "`Password` = ?, "
-                                                                            "`IV` = ?, "
-                                                                            "`Tag` = ?, "
-                                                                            "`URL` = ?, "
-                                                                            "`log` = NOW() "
-                                                                            "WHERE `ID` = ?";
-
-    // Prepare the query with the SQL statement
-    if (query.prepare(updateQueryString)) {
-        // Bind values to placeholders
-        query.addBindValue(appName);
-        query.addBindValue(username);
-        query.addBindValue(encryptedPassword); // Updated to use encrypted password
-        query.addBindValue(iv); // Bind IV
-        query.addBindValue(tag); // Bind Tag
-        query.addBindValue(url);
-        query.addBindValue(id);
-
-        // Execute the prepared statement
-        if (query.exec()) {
-            qDebug() << "Record updated successfully.";
-            refreshTable(); // Refresh the table after updating
-            logging("Updated record");
-        } else {
-            qDebug() << "Error updating record:" << query.lastError().text();
+    QString encryptionMethod = ui->comboBox->currentText();
+    if (encryptionMethod == "Aes_GCM_256") {
+        auto [encryptedPassword, iv, tag] = aes_GCM_ENCRYPT(password);
+        if (encryptedPassword.isEmpty() || iv.isEmpty() || tag.isEmpty()) {
+            qDebug() << "Encryption failed.";
+            return;
         }
-    } else {
-        qDebug() << "Query preparation error:" << query.lastError().text();
+
+        QString updateQueryString = "UPDATE `passwordmanager`.`" + login_name + "_password_data` "
+                                                                                "SET `Name of APP` = ?, "
+                                                                                "`Username` = ?, "
+                                                                                "`Password` = ?, "
+                                                                                "`IV` = ?, "
+                                                                                "`Tag` = ?, "
+                                                                                "`URL` = ?, "
+                                                                                "`log` = NOW(), "
+                                                                                "`encryption_method` = ? "
+                                                                                "WHERE `ID` = ?";
+
+        if (query.prepare(updateQueryString)) {
+            query.addBindValue(appName);
+            query.addBindValue(username);
+            query.addBindValue(encryptedPassword);
+            query.addBindValue(iv);
+            query.addBindValue(tag);
+            query.addBindValue(url);
+            query.addBindValue(encryptionMethod);
+            query.addBindValue(id);
+
+            if (query.exec()) {
+                qDebug() << "Record updated successfully.";
+                refreshTable();
+                logging("Updated record");
+            } else {
+                qDebug() << "Error updating record:" << query.lastError().text();
+            }
+        } else {
+            qDebug() << "Query preparation error:" << query.lastError().text();
+        }
+    } else if (encryptionMethod == "ChaCha20") {
+        auto [iv, encryptedPassword] = chacha20_encrypt(password);
+        if (encryptedPassword.isEmpty() || iv.isEmpty()) {
+            qDebug() << "Encryption failed.";
+            return;
+        }
+
+        QString updateQueryString = "UPDATE `passwordmanager`.`" + login_name + "_password_data` "
+                                                                                "SET `Name of APP` = ?, "
+                                                                                "`Username` = ?, "
+                                                                                "`Password` = ?, "
+                                                                                "`IV` = ?, "
+                                                                                "`URL` = ?, "
+                                                                                "`log` = NOW(), "
+                                                                                "`encryption_method` = ? "
+                                                                                "WHERE `ID` = ?";
+
+        if (query.prepare(updateQueryString)) {
+            query.addBindValue(appName);
+            query.addBindValue(username);
+            query.addBindValue(encryptedPassword);
+            query.addBindValue(iv);
+            query.addBindValue(url);
+            query.addBindValue(encryptionMethod);
+            query.addBindValue(id);
+
+            if (query.exec()) {
+                qDebug() << "Record updated successfully.";
+                refreshTable();
+                logging("Updated record");
+            } else {
+                qDebug() << "Error updating record:" << query.lastError().text();
+            }
+        } else {
+            qDebug() << "Query preparation error:" << query.lastError().text();
+        }
     }
 }
+
 void ManagerWindow::addRecord(const QString &appName, const QString &username, const QString &password, const QString &url)
 {
     QString encryptionMethod = ui->comboBox->currentText();
@@ -399,7 +436,6 @@ void ManagerWindow::addRecord(const QString &appName, const QString &username, c
 
 }
 
-
 void ManagerWindow::on_show_Password_Button_clicked()
 {
       ui->comboBox->hide();
@@ -417,34 +453,34 @@ void ManagerWindow::on_show_Password_Button_clicked()
 
 }
 
-
 void ManagerWindow::on_show_Password_Edit_Button_clicked(){
 
     // Toggle the visibility of passwords
     passwordsVisible = !passwordsVisible;
 
-    auto encryptionData = Get_Database_encryption_data();
-    QString ivString = std::get<0>(encryptionData);
-    QString encryptedPassword = std::get<1>(encryptionData); // Change to encryptedPassword
-    QString tagString = std::get<2>(encryptionData);
-    QString encryptionMethod = std::get<3>(encryptionData);
-
     QString decryptedText;
-    if (encryptionMethod == "Aes_GCM_256") {
-        decryptedText = aes_GCM_DECRYPT(ivString, encryptedPassword, tagString);
-        qDebug() << "Aes decryptions";
-    } else if (encryptionMethod == "ChaCha20") {
-        // Decrypt ChaCha20 using both IV and encrypted password
-        decryptedText = chacha20_decrypt(encryptedPassword, ivString);
-        qDebug() << "Chacha20 decrypting function";
-    } else {
-        qDebug() << "Unsupported encryption algorithm selected.";
-        return;
-    }
+    if (passwordsVisible) {
+        auto encryptionData = Get_Database_encryption_data();
+        QString ivString = std::get<0>(encryptionData);
+        QString encryptedPassword = std::get<1>(encryptionData); // Change to encryptedPassword
+        QString tagString = std::get<2>(encryptionData);
+        QString encryptionMethod = std::get<3>(encryptionData);
 
-    qDebug() << "Decrypted text:" << decryptedText;
-    ui->password_Line->setText(decryptedText);
-    on_actionChange_triggered();
+        if (encryptionMethod == "Aes_GCM_256") {
+            decryptedText = aes_GCM_DECRYPT(ivString, encryptedPassword, tagString);
+            qDebug() << "Aes decryption";
+        } else if (encryptionMethod == "ChaCha20") {
+            // Decrypt ChaCha20 using both IV and encrypted password
+            decryptedText = chacha20_decrypt(encryptedPassword, ivString);
+            qDebug() << "ChaCha20 decryption";
+        } else {
+            qDebug() << "Unsupported encryption algorithm selected.";
+            return;
+        }
+
+        qDebug() << "Decrypted text:" << decryptedText;
+           ui->password_Line->setText(decryptedText);
+    }
 
     if (passwordsVisible) {
         ui->password_Line->setEchoMode(QLineEdit::Normal);

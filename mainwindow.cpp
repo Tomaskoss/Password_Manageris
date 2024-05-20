@@ -363,6 +363,7 @@ bool MainWindow::create_User_Table(const QString& table_name){
                                                                                   "`log` DATETIME NULL,"
                                                                                   "`IV` VARCHAR(255) NULL,"
                                                                                   "`Tag` VARCHAR(255) NULL,"
+                                                                                  "`encryption_method` VARCHAR(32) NULL,"
                                                                                   "PRIMARY KEY (`ID`))");
 
     if (!query.exec()) {
@@ -479,10 +480,10 @@ bool MainWindow::insert_Scrypt_KDF(const QString& username, const QString& hashe
         query.bindValue(":username", usernameL);
         query.bindValue(":password", hashedPassword);
         query.bindValue(":login_salt", saltByteArray);
-        query.bindValue(":login_iterations", N);
-        query.bindValue(":login_r", r);
-        query.bindValue(":login_p", p);
-        query.bindValue(":login_maxmemory", maxmemory);
+        query.bindValue(":login_iterations", (unsigned long long) N);
+        query.bindValue(":login_r", (unsigned long long) r);
+        query.bindValue(":login_p", (unsigned long long)p);
+        query.bindValue(":login_maxmemory", (unsigned long long)maxmemory);
         query.bindValue(":login_saltlen", SALTLEN);
         query.bindValue(":login_hashlen", HASHLEN);
         query.bindValue(":algorithm_type", algorithm_type);
