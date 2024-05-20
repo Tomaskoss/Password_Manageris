@@ -1,6 +1,7 @@
 #ifndef DIALOG_SERVER_H
 #define DIALOG_SERVER_H
 
+#include "qprocess.h"
 #include <QDialog>
 #include <QTcpServer>
 #include <QSslSocket>
@@ -34,6 +35,7 @@ private:
     bool loadSslConfig();
     QString login_name;
     Ui::Dialog_server *ui;
+
 
 
 };

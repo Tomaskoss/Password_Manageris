@@ -36,15 +36,23 @@ void Dialog_server::on_close_Button_clicked()
 
 void Dialog_server::on_start_server_clicked()
 {
-
     // Directory for the certificate and key files
-    QString currentDir = "D:/Password_Manageris/crt";
+    QString currentDir = QDir::toNativeSeparators(QCoreApplication::applicationDirPath()) + QDir::separator() + "crt";
 
+    // Check if the directory exists, and if not, create it
+    QDir dir(currentDir);
+    if (!dir.exists()) {
+        if (!dir.mkpath(".")) {
+            qDebug() << "Failed to create directory:" << currentDir;
+            return;
+        }
+    }
     // Change the current directory
     if (QDir::setCurrent(currentDir)) {
         qDebug() << "Current directory changed to:" << currentDir;
     } else {
         qDebug() << "Failed to change current directory to:" << currentDir;
+        return;
     }
 
     // Retrieve the current directory path
@@ -52,10 +60,10 @@ void Dialog_server::on_start_server_clicked()
     qDebug() << "Current directory:" << currentDirPath;
 
     // Output directory for the JSON file
-    QString outputDirectory = "D:/Password_Manageris/crt/";
+    QString outputDirectory = QString("%1%2Table_export.json").arg(currentDirPath, QDir::separator());
 
     // Command to start the OpenSSL server with specified certificate and key, and redirect output to Table_json.json
-    QString command = "openssl s_server -cert " + currentDirPath + "/server-cert.pem -key " + currentDirPath + "/server-key.pem -accept 1234 -quiet > " + outputDirectory + "Table_export.json";
+    QString command = QString("openssl s_server -cert %1/server-cert.pem -key %1/server-key.pem -accept 1234 -quiet > %2").arg(currentDirPath).arg(outputDirectory);
 
     // Execute the command in the system shell
     int exitCode = system(command.toStdString().c_str());
@@ -68,32 +76,43 @@ void Dialog_server::on_start_server_clicked()
     }
 }
 
-
 void Dialog_server::on_generate_crt_clicked()
 {
-    QString newDir = "D:/Password_Manageris/crt";
-    if (QDir::setCurrent(newDir)) {
-        qDebug() << "Current directory changed to:" << newDir;
-    } else {
-        qDebug() << "Failed to change current directory to:" << newDir;
-    }
-    // Získání aktuálního pracovního adresáře
-    QString currentDir = QDir::currentPath();
-    qDebug()<<"current dir:"<<currentDir;
-    // Příkaz pro generování certifikátu pomocí OpenSSL
-    QString command = "openssl req -x509 -newkey rsa:4096 -keyout " + currentDir + "/server-key.pem -out " + currentDir + "/server-cert.pem -nodes -days 365";
+    // Directory for the certificate and key files
+    QString currentDir = QDir::toNativeSeparators(QCoreApplication::applicationDirPath()) + QDir::separator() + "crt";
 
-    // Spuštění příkazu v systémovém shellu
+    // Check if the directory exists, and if not, create it
+    QDir dir(currentDir);
+    if (!dir.exists()) {
+        if (!dir.mkpath(".")) {
+            qDebug() << "Failed to create directory:" << currentDir;
+            return;
+        }
+    }
+
+    if (QDir::setCurrent(currentDir)) {
+        qDebug() << "Current directory changed to:" << currentDir;
+    } else {
+        qDebug() << "Failed to change current directory to:" << currentDir;
+        return;
+    }
+
+    // Retrieve the current directory path
+    QString currentDirPath = QDir::currentPath();
+    qDebug() << "current dir:" << currentDirPath;
+
+    // Constructing the command for generating the certificate
+    QString command = QString("openssl req -x509 -newkey rsa:4096 -keyout %1/server-key.pem -out %1/server-cert.pem -nodes -days 365 -subj /CN=netpass").arg(currentDirPath);
+
     int exitCode = system(command.toStdString().c_str());
 
-    // Ověření, zda příkaz proběhl bez chyb
+    // Checking if the command ran successfully
     if (exitCode == 0) {
-        qDebug() << "Certifikát klienta byl úspěšně vygenerován.";
+        qDebug() << "Certificate generation successful.";
     } else {
-        qDebug() << "Chyba při generování certifikátu klienta.";
+        qDebug() << "Error generating certificate.";
     }
 }
-
 
 void Dialog_server::on_load_data_clicked()
 {
@@ -158,6 +177,5 @@ void Dialog_server::on_load_data_clicked()
     }
 
     QMessageBox::information(this, "Success", "Data loaded successfully.");
-
-
 }
+

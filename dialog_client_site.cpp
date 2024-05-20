@@ -44,7 +44,7 @@ void Dialog_client_site::on_send_file_button_clicked()
     int port = 1234;
 
     // Set the current directory to the certificate directory
-    QString certificateDir = "D:/Password_Manageris/crt";
+    QString certificateDir = QDir::toNativeSeparators(QCoreApplication::applicationDirPath()) + QDir::separator() + "crt";
     if (QDir::setCurrent(certificateDir)) {
         qDebug() << "Current directory changed to:" << certificateDir;
     } else {
@@ -55,11 +55,19 @@ void Dialog_client_site::on_send_file_button_clicked()
     QString currentDir = QDir::currentPath();
     qDebug() << "Current directory:" << currentDir;
 
-    // File to send
-    QString fileToSend = "Table_export.json";
+    // Let the user choose the file to send
+    QString fileToSend = QFileDialog::getOpenFileName(this, "Select File to Send", QDir::homePath(), "JSON Files (*.json);;All Files (*)");
+    if (fileToSend.isEmpty()) {
+        qDebug() << "No file selected.";
+        return;
+    }
 
     // Command to send the file to the server using OpenSSL client with specified IP, port, and certificates
-    QString command = "openssl s_client -connect " + ip_address_server + ":" + QString::number(port) + " -cert " + currentDir + "/server-cert.pem -key " + currentDir + "/server-key.pem < " + fileToSend;
+    QString command = QString("openssl s_client -connect %1:%2 -cert %3/server-cert.pem -key %3/server-key.pem < %4")
+                          .arg(ip_address_server)
+                          .arg(port)
+                          .arg(currentDir)
+                          .arg(fileToSend);
 
     // Execute the command in the system shell
     int exitCode = system(command.toStdString().c_str());
@@ -70,44 +78,49 @@ void Dialog_client_site::on_send_file_button_clicked()
     } else {
         qDebug() << "Error sending the file to the server.";
     }
-
 }
-
-
 
 void Dialog_client_site::on_generate_client_crt_clicked()
 {
-    QString newDir = "D:/Password_Manageris/crt";
+    // Set the current directory dynamically based on the application directory path
+    QString newDir = QDir::toNativeSeparators(QCoreApplication::applicationDirPath()) + QDir::separator() + "crt";
+
+    // Check if the directory exists, and if not, create it
+    QDir dir(newDir);
+    if (!dir.exists()) {
+        if (!dir.mkpath(".")) {
+            qDebug() << "Failed to create directory:" << newDir;
+            return;
+        }
+    }
+
     if (QDir::setCurrent(newDir)) {
         qDebug() << "Current directory changed to:" << newDir;
     } else {
         qDebug() << "Failed to change current directory to:" << newDir;
+        return;
     }
-    // Získání aktuálního pracovního adresáře
-    QString currentDir = QDir::currentPath();
-    qDebug()<<"current dir:"<<currentDir;
-    // Příkaz pro generování certifikátu pomocí OpenSSL
-    QString command = "openssl req -x509 -newkey rsa:4096 -keyout " + currentDir + "/client-key.pem -out " + currentDir + "/client-cert.pem -nodes -days 365";
 
-    // Spuštění příkazu v systémovém shellu
+    QString currentDir = QDir::currentPath();
+    qDebug() << "Current directory:" << currentDir;
+
+    // Command to generate the client certificate using OpenSSL
+    QString command = QString("openssl req -x509 -newkey rsa:4096 -keyout %1/client-key.pem -out %1/client-cert.pem -nodes -days 365 -subj /CN=netpass")
+                          .arg(currentDir);
+
+    // Execute the command in the system shell
     int exitCode = system(command.toStdString().c_str());
 
-    // Ověření, zda příkaz proběhl bez chyb
+    // Check if the command ran successfully
     if (exitCode == 0) {
-        qDebug() << "Certifikát klienta byl úspěšně vygenerován.";
+        qDebug() << "Client certificate was successfully generated.";
     } else {
-        qDebug() << "Chyba při generování certifikátu klienta.";
+        qDebug() << "Error generating client certificate.";
     }
-
-
 }
-
 
 void Dialog_client_site::on_table_export_clicked()
 {
-    // Assuming you have already established a valid MySQL connection named 'db_connection'
-    // and you have the login_name variable storing the user's login name
-    // Assuming line_login_name is where the user inputs their login name
 
     QString queryString = "SELECT `ID`, `Name of APP`, `Username`, `Password`, `URL`, `log`, `IV`, `Tag` FROM `" + login_name + "_password_data`;";
     QSqlQuery query;
@@ -149,9 +162,7 @@ void Dialog_client_site::on_table_export_clicked()
     }
 }
 
-
 void Dialog_client_site::on_close_Button_clicked()
 {
     close();
 }
-
