@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  db:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      tags:
+        - "passwordmanageris/db"
+    image: 'passwordmanageris/db'
+    container_name: passwordmanageris_db
+    hostname: passwordmanageris_db
+    restart: always
+    ports:
+      - "3306:3306"
+    volumes:
+      - type: bind
+        source: /home/tommy/mysql_data
+        target: /var/lib/mysql

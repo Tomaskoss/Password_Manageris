@@ -14,19 +14,19 @@ D:/Password_Manageris/qt_build
 *.pch
 
 # Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
+#*.so
+#*.dylib
+#*.dll
 
 # Fortran module files
 *.mod
 *.smod
 
 # Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
+#*.lai
+#*.la
+#*.a
+#*.lib
 
 # Executables
 *.exe
@@ -48,16 +48,16 @@ _deps
 
 
 # C++ objects and libs
-*.slo
-*.lo
-*.o
-*.a
-*.la
-*.lai
-*.so
-*.so.*
-*.dll
-*.dylib
+#*.slo
+#*.lo
+#*.o
+#*.a
+#*.la
+#*.lai
+#*.so
+#*.so.*
+#*.dll
+#*.dylib
 
 # Qt-es
 object_script.*.Release
@@ -104,9 +104,4 @@ compile_commands.json
 qt_build/
 build/
 
-crt/
-/D:/Password_Manageris/crt/
-
-/D:/Password_Manageris/crt/*
-D:\Password_Manageris\crt\*
 

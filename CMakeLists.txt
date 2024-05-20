@@ -2,7 +2,13 @@ cmake_minimum_required(VERSION 3.5)
 
 project(PasswordManageris VERSION 0.1 LANGUAGES CXX)
 
-set(PROJECT_FOLDER "D:/Password_Manageris")
+if(WIN32)
+    set(PROJECT_FOLDER "D:/Password_Manageris")
+elseif(UNIX)
+    set(PROJECT_FOLDER "/home/tommy/Password_Manageris-Test")
+else()
+    message(FATAL_ERROR "Unsupported OS")
+endif()
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -11,7 +17,6 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
-set(OPENSSL_ROOT_DIR "${PROJECT_FOLDER}/libs/openSSL_build")
 set(qotp_DIR "${PROJECT_FOLDER}/libs/qotp-main/qotp_build/CMakeFiles")
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
@@ -50,6 +55,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 
 
 
+
     )
 
 
@@ -76,7 +82,6 @@ endif()
     include_directories("${PROJECT_FOLDER}/libs/argon2")
     include_directories("${PROJECT_FOLDER}/libs/argon2/include")
     link_directories("${PROJECT_FOLDER}/libs/argon2")
-    target_link_libraries(PasswordManageris PRIVATE "${PROJECT_FOLDER}/libs/argon2/libargon2.a")
 
 
 
@@ -85,28 +90,38 @@ endif()
     target_link_libraries(PasswordManageris PRIVATE Qt6::Core)
 
 
-    target_link_libraries(PasswordManageris PRIVATE ${qotp_LIBRARIES})
-    include_directories("${PROJECT_FOLDER}/libs/qotp-main/install/include")
-    include_directories("${PROJECT_FOLDER}/libs/qotp-main/install")
-    link_directories("${PROJECT_FOLDER}/libs/qotp-main/install/lib")
-    target_link_libraries(PasswordManageris PRIVATE "${PROJECT_FOLDER}/libs/qotp-main/install/lib/liblibqotp.a")
 
-    include_directories("${PROJECT_FOLDER}/libs/openSSL_build/include")
+    include_directories("${PROJECT_FOLDER}/libs/qotp-main/install/include/")
+    include_directories("${PROJECT_FOLDER}/libs/qotp-main/install/")
+    link_directories("${PROJECT_FOLDER}/libs/qotp-main/install/lib/")
 
+    #target_link_libraries(PasswordManageris PRIVATE ${qotp_LIBRARIES})
+
+    include_directories("${PROJECT_FOLDER}/libs/openSSL_build/include/")
+    include_directories("${PROJECT_FOLDER}/libs/openSSL_build/bin/")
     link_directories("${PROJECT_FOLDER}/libs/openSSL_build/lib")
 
     target_link_libraries(PasswordManageris PRIVATE OpenSSL::SSL OpenSSL::Crypto)
     target_link_libraries(PasswordManageris PRIVATE ${OPENSSL_LIBRARIES})
 
 
-    include_directories("${PROJECT_FOLDER}/libs/QtSmtpMime")
-    include_directories("${PROJECT_FOLDER}/libs/QtSmtpMime/include/smtpmime")
-    link_libraries("${PROJECT_FOLDER}/libs/QtSmtpMime/bin")
-    target_link_libraries(PasswordManageris PRIVATE "${PROJECT_FOLDER}/libs/QtSmtpMime/bin/libQtSmtpMime.dll")
+    include_directories("${PROJECT_FOLDER}/libs/QtSmtpMime/")
+    include_directories("${PROJECT_FOLDER}/libs/QtSmtpMime/include/smtpmime/")
+    link_libraries("${PROJECT_FOLDER}/libs/QtSmtpMime/bin/")
+    if(LINUX)
+        target_link_libraries(PasswordManageris PRIVATE "${PROJECT_FOLDER}/libs/QtSmtpMime/bin/libQtSmtpMime.so.0.1")
+        target_link_libraries(PasswordManageris PRIVATE "${PROJECT_FOLDER}/libs/argon2/libargon2.so")
+        target_link_libraries(PasswordManageris PRIVATE "${PROJECT_FOLDER}/libs/qotp-main/install/lib/liblibqotp-linux.a")
+    elseif(WIN32)
+        target_link_libraries(PasswordManageris PRIVATE "${PROJECT_FOLDER}/libs/QtSmtpMime/bin/libQtSmtpMime.dll")
+        target_link_libraries(PasswordManageris PRIVATE "${PROJECT_FOLDER}/libs/qotp-main/install/lib/liblibqotp.a")
+        target_link_libraries(PasswordManageris PRIVATE "${PROJECT_FOLDER}/libs/argon2/libargon2.a")
+    endif()
 
     target_compile_features(PasswordManageris PRIVATE cxx_range_for)
 
     target_link_libraries(PasswordManageris PRIVATE Qt6::Network)
+
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
