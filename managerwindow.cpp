@@ -593,7 +593,6 @@ std::tuple<QString, QString> ManagerWindow::chacha20_encrypt(const QString &plai
     return std::make_tuple(ivString, encryptedText);
 }
 
-// ChaCha20 decryption function
 QString ManagerWindow::chacha20_decrypt(const QString &encryptedText, const QString &ivString) {
     // Initialize OpenSSL
     OpenSSL_add_all_algorithms();
@@ -668,6 +667,7 @@ QString ManagerWindow::chacha20_decrypt(const QString &encryptedText, const QStr
 
     return decryptedText;
 }
+
 void ManagerWindow::generateRandomPassword(QString& password, size_t passwordLength){
     std::string CHARACTERS;
     const std::string Alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -761,7 +761,6 @@ QString ManagerWindow::Get_KDF_From_Database(const QString &login_name) {
     return loginMasterPassword;
 }
 
-
 QString ManagerWindow::aes_GCM_DECRYPT(const QString &base64Ciphertext, const QString &base64IV, const QString &base64Tag) {
     // Initialize OpenSSL
     OpenSSL_add_all_algorithms();
@@ -840,7 +839,6 @@ QString ManagerWindow::aes_GCM_DECRYPT(const QString &base64Ciphertext, const QS
     return decryptedText;
 }
 
-
 std::tuple<QString, QString, QString, QString> ManagerWindow::Get_Database_encryption_data() {
     QSqlQuery query;
     QString ivString;
@@ -902,7 +900,6 @@ void ManagerWindow::on_button_To_Logs_clicked()
     ui->button_To_Logs->hide();
 }
 
-
 void ManagerWindow::on_Back_To_Records_clicked()
 {
     ui->tableView->setModel(model);
@@ -911,7 +908,6 @@ void ManagerWindow::on_Back_To_Records_clicked()
     ui->button_To_Logs->show();
 
 }
-
 
 void ManagerWindow::on_server_start_clicked()
 {
@@ -927,7 +923,6 @@ void ManagerWindow::on_server_start_clicked()
     }
 
 }
-
 
 void ManagerWindow::on_klient_start_clicked()
 {
