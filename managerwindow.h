@@ -55,7 +55,12 @@ private slots:
 
 private:
     std::tuple<QString, QString, QString> aes_GCM_ENCRYPT(const QString &plaintext);
-     std::tuple<QString, QString, QString> Get_Database_encryption_data();
+    std::tuple<QString, QString> chacha20_encrypt(const QString &plaintext);
+    QString aes_GCM_DECRYPT(const QString &base64Ciphertext, const QString &base64IV, const QString &base64Tag);
+    QString chacha20_decrypt(const QString &encryptedText, const QString &ivString);
+
+    std::tuple<QString, QString, QString, QString> Get_Database_encryption_data();
+
     void logging(QString logType);
     void addRecord(const QString &appName, const QString &username, const QString &password, const QString &url);
     void clearData();
@@ -63,7 +68,7 @@ private:
     void generateRandomPassword(QString &password, size_t passwordLength);
     void handleErrors(void);
     QString Get_KDF_From_Database(const QString &login_name);
-    QString aes_GCM_DECRYPT(const QString &base64Ciphertext, const QString &base64IV, const QString &base64Tag);
+
     Ui::ManagerWindow *ui;
     QString login_name;
     QSqlQueryModel *model;

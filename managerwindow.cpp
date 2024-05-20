@@ -62,6 +62,9 @@ ManagerWindow::ManagerWindow(const QString &login_name,MainWindow *mainWindow)
     ui->stackedWidget->setCurrentIndex(0);
     ui->Back_To_Records->hide();
 
+
+    QString decryptedtext=chacha20_decrypt("GRZfFz8/","aMjSilEWO5fHzLQH");
+    qDebug()<<"decrypted chacha:"<<decryptedtext;
     query.prepare("SELECT * FROM `passwordmanager`.`"+login_name+"_password_data`");
     if (query.exec()) {
         logging("Logged in");
@@ -99,6 +102,7 @@ void ManagerWindow::on_LogOut_Button_clicked()
 
 void ManagerWindow::on_actionAdd_triggered()
 {
+        ui->comboBox->show();
         selectedRowID.clear();
         resetAutoIncrementAndReindex();
         ui->stackedWidget->setCurrentIndex(1); // Change the index to 1
@@ -323,36 +327,74 @@ void ManagerWindow::updateRecord(const QString &appName, const QString &username
 }
 void ManagerWindow::addRecord(const QString &appName, const QString &username, const QString &password, const QString &url)
 {
-    // Encrypt the password
-    auto [encryptedPassword, iv, tag] = aes_GCM_ENCRYPT(password);
-    QSqlQuery query;
-    QString insertQueryString = "INSERT INTO `passwordmanager`.`" + login_name + "_password_data` "
-                                                                                 "(`Name of APP`, `Username`, `Password`, `URL`, `log`, `IV`, `Tag`) "
-                                                                                 "VALUES (?, ?, ?, ?, NOW(), ?, ?)";
-
-    // Prepare the query with the SQL statement
-    if (query.prepare(insertQueryString)) {
-        // Bind values to placeholders
-        query.addBindValue(appName);
-        query.addBindValue(username);
-        query.addBindValue(encryptedPassword); // Bind the encrypted password
-        query.addBindValue(url);
-        query.addBindValue(iv); // Bind IV
-        query.addBindValue(tag); // Bind tag
-
-        // Execute the prepared statement
-        if (query.exec()) {
-            qDebug() << "Record added successfully.";
-            refreshTable(); // Refresh the table after adding
-            query.finish();
-            logging("Added record");
-
-
-        } else {
-            qDebug() << "Error adding record:" << query.lastError().text();
+    QString encryptionMethod = ui->comboBox->currentText();
+    if (encryptionMethod == "Aes_GCM_256") {
+        auto [encryptedPassword, iv, tag] = aes_GCM_ENCRYPT(password);
+        if (encryptedPassword.isEmpty() || iv.isEmpty() || tag.isEmpty()) {
+            qDebug() << "Encryption failed.";
+            return;
         }
-    } else {
-        qDebug() << "Query preparation error:" << query.lastError().text();
+
+        QSqlQuery query;
+        QString insertQueryString = "INSERT INTO `passwordmanager`.`" + login_name + "_password_data` "
+                                                                                     "(`Name of APP`, `Username`, `Password`, `URL`, `log`, `IV`, `Tag`, `encryption_method`) "
+                                                                                     "VALUES (?, ?, ?, ?, NOW(), ?, ?, ?)";
+
+        // Prepare the query with the SQL statement
+        if (query.prepare(insertQueryString)) {
+            // Bind values to placeholders
+            query.addBindValue(appName);
+            query.addBindValue(username);
+            query.addBindValue(encryptedPassword); // Bind the encrypted password
+            query.addBindValue(url);
+            query.addBindValue(iv); // Bind IV
+            query.addBindValue(tag); // Bind tag
+            query.addBindValue(encryptionMethod); // Bind encryption method
+
+            // Execute the prepared statement
+            if (query.exec()) {
+                qDebug() << "Record added successfully.";
+                refreshTable(); // Refresh the table after adding
+                query.finish();
+                logging("Added record");
+            } else {
+                qDebug() << "Error adding record:" << query.lastError().text();
+            }
+        } else {
+            qDebug() << "Query preparation error:" << query.lastError().text();
+        }
+    }else if (encryptionMethod == "ChaCha20") {
+        auto [iv, encryptedPassword] = chacha20_encrypt(password);
+        if (encryptedPassword.isEmpty() || iv.isEmpty()) {
+            qDebug() << "Encryption failed.";
+            return;
+        }
+
+        QSqlQuery query;
+        QString insertQueryString = "INSERT INTO `passwordmanager`.`" + login_name + "_password_data` "
+                                                                                     "(`Name of APP`, `Username`, `Password`, `URL`, `log`, `IV`,  `encryption_method`) "
+                                                                                     "VALUES (?, ?, ?, ?, NOW(), ?, ?)";
+
+        if (query.prepare(insertQueryString)) {
+            query.addBindValue(appName);
+            query.addBindValue(username);
+            query.addBindValue(encryptedPassword);
+            query.addBindValue(url);
+            query.addBindValue(iv);
+            query.addBindValue(encryptionMethod);
+
+            // Execute the prepared statement
+            if (query.exec()) {
+                qDebug() << "Record added successfully.";
+                refreshTable();
+                query.finish();
+                logging("Added record");
+            } else {
+                qDebug() << "Error adding record:" << query.lastError().text();
+            }
+        } else {
+            qDebug() << "Query preparation error:" << query.lastError().text();
+        }
     }
 
 }
@@ -360,18 +402,13 @@ void ManagerWindow::addRecord(const QString &appName, const QString &username, c
 
 void ManagerWindow::on_show_Password_Button_clicked()
 {
+      ui->comboBox->hide();
     if (selectedRowID.isEmpty()) {
         qDebug()<<"rowid for show:"<<selectedRowID;
         qDebug()<<"No row selected nothing to show";
     }
     else{
-        auto encryptionData = Get_Database_encryption_data();
-        QString ivString= std::get<0>(encryptionData);
-        QString encryptedText= std::get<1>(encryptionData);
-        QString tagString= std::get<2>(encryptionData);
-        QString decryptedText= aes_GCM_DECRYPT(ivString,encryptedText,tagString);
-        qDebug()<<"decrypted text:"<< decryptedText;
-        ui->password_Line->setText(decryptedText);
+
         on_actionChange_triggered();
     }
 
@@ -387,21 +424,31 @@ void ManagerWindow::on_show_Password_Edit_Button_clicked(){
     passwordsVisible = !passwordsVisible;
 
     auto encryptionData = Get_Database_encryption_data();
-    QString ivString= std::get<0>(encryptionData);
-    QString encryptedText= std::get<1>(encryptionData);
-    QString tagString= std::get<2>(encryptionData);
-    QString decryptedText= aes_GCM_DECRYPT(ivString,encryptedText,tagString);
-    qDebug()<<"decrypted text:"<< decryptedText;
+    QString ivString = std::get<0>(encryptionData);
+    QString encryptedPassword = std::get<1>(encryptionData); // Change to encryptedPassword
+    QString tagString = std::get<2>(encryptionData);
+    QString encryptionMethod = std::get<3>(encryptionData);
+
+    QString decryptedText;
+    if (encryptionMethod == "Aes_GCM_256") {
+        decryptedText = aes_GCM_DECRYPT(ivString, encryptedPassword, tagString);
+        qDebug() << "Aes decryptions";
+    } else if (encryptionMethod == "ChaCha20") {
+        // Decrypt ChaCha20 using both IV and encrypted password
+        decryptedText = chacha20_decrypt(encryptedPassword, ivString);
+        qDebug() << "Chacha20 decrypting function";
+    } else {
+        qDebug() << "Unsupported encryption algorithm selected.";
+        return;
+    }
+
+    qDebug() << "Decrypted text:" << decryptedText;
     ui->password_Line->setText(decryptedText);
     on_actionChange_triggered();
 
-
-
     if (passwordsVisible) {
-        // If passwords are now visible, set echo mode to Normal
         ui->password_Line->setEchoMode(QLineEdit::Normal);
     } else {
-        // If passwords are not visible, set echo mode to Password
         ui->password_Line->setEchoMode(QLineEdit::Password);
     }
 
@@ -471,7 +518,156 @@ std::tuple<QString, QString, QString> ManagerWindow::aes_GCM_ENCRYPT(const QStri
     return std::make_tuple(ivString, encryptedText, tagString);
 }
 
+std::tuple<QString, QString> ManagerWindow::chacha20_encrypt(const QString &plaintext) {
+    // Initialize OpenSSL
+    OpenSSL_add_all_algorithms();
+    ERR_load_crypto_strings();
 
+    // Parameters for ChaCha20
+    const int key_len = 32; // 256-bit key
+    const int iv_len = 16;  // 96-bit nonce
+
+    // Generate a random IV (nonce)
+    unsigned char iv[iv_len];
+    if (RAND_bytes(iv, iv_len) != 1) {
+        qDebug() << "Failed to generate random IV.";
+        return std::make_tuple("", ""); // Return empty values indicating failure
+    }
+
+    // Retrieve KDF from the database using the login_name
+    QString loginMasterPassword = Get_KDF_From_Database(login_name);
+    if (loginMasterPassword.isEmpty()) {
+        qDebug() << "Failed to retrieve KDF from the database.";
+        return std::make_tuple("", ""); // Return empty values indicating failure
+    }
+
+    // Convert QString to QByteArray to use with OpenSSL
+    QByteArray keyBytes = loginMasterPassword.toUtf8();
+    unsigned char *key = reinterpret_cast<unsigned char*>(keyBytes.data());
+
+    // Encrypt plaintext using ChaCha20
+    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+    if (!ctx) {
+        qDebug() << "Failed to create EVP_CIPHER_CTX.";
+        return std::make_tuple("", "");
+    }
+
+    if (EVP_EncryptInit_ex(ctx, EVP_chacha20(), NULL, key, iv) != 1) {
+        qDebug() << "Failed to initialize ChaCha20 cipher.";
+        EVP_CIPHER_CTX_free(ctx);
+        return std::make_tuple("", "");
+    }
+
+    // Allocate memory for ciphertext
+    int plaintext_len = plaintext.toUtf8().size();
+    unsigned char *ciphertext = new unsigned char[plaintext_len];
+
+    int len;
+    if (EVP_EncryptUpdate(ctx, ciphertext, &len, (unsigned char*)plaintext.toStdString().c_str(), plaintext_len) != 1) {
+        qDebug() << "Encryption failed.";
+        EVP_CIPHER_CTX_free(ctx);
+        delete[] ciphertext;
+        return std::make_tuple("", "");
+    }
+
+    int ciphertext_len = len;
+
+    if (EVP_EncryptFinal_ex(ctx, ciphertext + len, &len) != 1) {
+        qDebug() << "Failed to finalize encryption.";
+        EVP_CIPHER_CTX_free(ctx);
+        delete[] ciphertext;
+        return std::make_tuple("", "");
+    }
+
+    ciphertext_len += len;
+
+    // Clean up
+    EVP_CIPHER_CTX_free(ctx);
+
+    // Convert ciphertext and IV to QString and return as a tuple
+    QString encryptedText = QByteArray(reinterpret_cast<const char*>(ciphertext), ciphertext_len).toBase64();
+    QString ivString = QByteArray(reinterpret_cast<const char*>(iv), iv_len).toBase64();
+
+    delete[] ciphertext;
+
+    return std::make_tuple(ivString, encryptedText);
+}
+
+// ChaCha20 decryption function
+QString ManagerWindow::chacha20_decrypt(const QString &encryptedText, const QString &ivString) {
+    // Initialize OpenSSL
+    OpenSSL_add_all_algorithms();
+    ERR_load_crypto_strings();
+
+    // Parameters for ChaCha20
+    const int iv_len = 16;  // 96-bit nonce
+
+    // Decode the base64 encoded IV and ciphertext
+    QByteArray iv = QByteArray::fromBase64(ivString.toUtf8());
+    QByteArray ciphertext = QByteArray::fromBase64(encryptedText.toUtf8());
+
+    if (iv.size() != iv_len) {
+        qDebug() << "Invalid IV length.";
+        return ""; // Return empty QString indicating failure
+    }
+
+    // Retrieve KDF from the database using the login_name
+    QString loginMasterPassword = Get_KDF_From_Database(login_name);
+    if (loginMasterPassword.isEmpty()) {
+        qDebug() << "Failed to retrieve KDF from the database.";
+        return ""; // Return empty QString indicating failure
+    }
+
+    // Convert QString to QByteArray to use with OpenSSL
+    QByteArray keyBytes = loginMasterPassword.toUtf8();
+    unsigned char *key = reinterpret_cast<unsigned char*>(keyBytes.data());
+
+    // Decrypt ciphertext using ChaCha20
+    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+    if (!ctx) {
+        qDebug() << "Failed to create EVP_CIPHER_CTX.";
+        return "";
+    }
+
+    if (EVP_DecryptInit_ex(ctx, EVP_chacha20(), NULL, key, reinterpret_cast<unsigned char*>(iv.data())) != 1) {
+        qDebug() << "Failed to initialize ChaCha20 cipher.";
+        EVP_CIPHER_CTX_free(ctx);
+        return "";
+    }
+
+    // Allocate memory for plaintext
+    int ciphertext_len = ciphertext.size();
+    unsigned char *plaintext = new unsigned char[ciphertext_len];
+
+    int len;
+    if (EVP_DecryptUpdate(ctx, plaintext, &len, reinterpret_cast<unsigned char*>(ciphertext.data()), ciphertext_len) != 1) {
+        qDebug() << "Decryption failed.";
+        EVP_CIPHER_CTX_free(ctx);
+        delete[] plaintext;
+        return "";
+    }
+
+    int plaintext_len = len;
+
+    if (EVP_DecryptFinal_ex(ctx, plaintext + len, &len) != 1) {
+        qDebug() << "Failed to finalize decryption.";
+        EVP_CIPHER_CTX_free(ctx);
+        delete[] plaintext;
+        return "";
+    }
+
+    plaintext_len += len;
+
+    // Clean up
+    EVP_CIPHER_CTX_free(ctx);
+
+    // Convert plaintext to QString and return
+    QString decryptedText = QString::fromUtf8(reinterpret_cast<const char*>(plaintext), plaintext_len);
+
+    delete[] plaintext;
+
+    return decryptedText;
+}
 void ManagerWindow::generateRandomPassword(QString& password, size_t passwordLength){
     std::string CHARACTERS;
     const std::string Alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -645,26 +841,29 @@ QString ManagerWindow::aes_GCM_DECRYPT(const QString &base64Ciphertext, const QS
 }
 
 
-std::tuple<QString, QString, QString> ManagerWindow::Get_Database_encryption_data() {
+std::tuple<QString, QString, QString, QString> ManagerWindow::Get_Database_encryption_data() {
     QSqlQuery query;
     QString ivString;
     QString tagString;
     QString encryptedText;
-    query.prepare("SELECT Password, IV, Tag FROM `passwordmanager`.`" + login_name + "_password_data` WHERE id = :id");
+    QString encryptionMethod; // Add variable for encryption method
+    query.prepare("SELECT Password, IV, Tag, encryption_method FROM `passwordmanager`.`" + login_name + "_password_data` WHERE id = :id");
     query.bindValue(":id", selectedRowID);
     if(query.exec()) {
         if (query.next()) {
             encryptedText = query.value(0).toString();
             ivString = query.value(1).toString();
             tagString = query.value(2).toString();
+            encryptionMethod = query.value(3).toString(); // Retrieve encryption method
             qDebug() << "Login Master Password: " << encryptedText;
             qDebug() << "IV: " << ivString;
             qDebug() << "Tag: " << tagString;
+            qDebug() << "Encryption Method: " << encryptionMethod; // Output encryption method
         }
     } else {
         qDebug() << "Query execution error: " << query.lastError();
     }
-    return std::make_tuple(ivString, encryptedText, tagString);
+    return std::make_tuple(ivString, encryptedText, tagString, encryptionMethod);
 }
 
 void ManagerWindow::logging(QString logType){

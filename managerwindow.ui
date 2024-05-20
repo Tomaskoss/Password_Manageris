@@ -36,7 +36,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="Table_page">
      <widget class="QTableView" name="tableView">
@@ -789,6 +789,26 @@ gridline-color: rgb(255, 255, 255);
        <string>Show</string>
       </property>
      </widget>
+     <widget class="QComboBox" name="comboBox">
+      <property name="geometry">
+       <rect>
+        <x>230</x>
+        <y>40</y>
+        <width>80</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <item>
+       <property name="text">
+        <string>Aes_GCM_256</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>ChaCha20</string>
+       </property>
+      </item>
+     </widget>
      <zorder>background_picture_2</zorder>
      <zorder>Confirm_Button</zorder>
      <zorder>password_Line</zorder>
@@ -801,6 +821,7 @@ gridline-color: rgb(255, 255, 255);
      <zorder>app_Line</zorder>
      <zorder>label_Password</zorder>
      <zorder>show_Password_Edit_Button</zorder>
+     <zorder>comboBox</zorder>
     </widget>
     <widget class="QWidget" name="Generator_page">
      <widget class="QLabel" name="background_picture_3">
