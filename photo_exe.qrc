@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/photo">
+        <file>pictures/output-onlinepngtools.ico</file>
+    </qresource>
+</RCC>

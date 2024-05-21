@@ -39,6 +39,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     ui->stackedWidget->setCurrentIndex(0);
+    ui->otp_line->hide();
     create_Database_Connection();
 
 
@@ -51,7 +52,9 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_SignUp_Button_clicked()
 {
-     ui->stackedWidget->setCurrentIndex(1);
+    ui->stackedWidget->setCurrentIndex(1);
+    ui->line_username->clear();
+    ui->line_password->clear();
 
 }
 
@@ -182,6 +185,11 @@ void MainWindow::on_Register_Button_clicked()
 void MainWindow::on_Confirm_Button_clicked()
 {
     create_Table_And_Store_Password();
+    ui->line_confirm_password->clear();
+    ui->line_master_password->clear();
+    ui->line_email->clear();
+    ui->line_pin->clear();
+    ui->line_login->clear();
 }
 
 void MainWindow::create_Table_And_Store_Password(){
@@ -302,7 +310,6 @@ bool MainWindow::is_Username_Available(const QString& username) {
     return !query.next(); // If query.next() returns false, username is available
 }
 
-
 void MainWindow::register_User(){
     // Validate user credentials
     if (!validate_Register_Credentials()) {
@@ -405,7 +412,7 @@ QString MainWindow::PBKDF2_KDF(const QString& password, const uint8_t* salt){
 
             int iterations=600000;
             unsigned char pwdout[HASHLEN];
-            PKCS5_PBKDF2_HMAC(passwordCString, pwdlen, salt, SALTLEN, iterations,EVP_sha512(),HASHLEN, pwdout);
+            PKCS5_PBKDF2_HMAC(passwordCString, pwdlen, salt, SALTLEN, iterations,EVP_sha256(),HASHLEN, pwdout);
             qDebug() << "pbkdf2:";
             QString hashedPasswordString;
             for (int i = 0; i < HASHLEN; ++i) {
@@ -430,13 +437,12 @@ bool MainWindow::insert_PBKDF2_KDF(const QString& username,const QString& hashed
     query.bindValue(":Login_email",email);
     query.bindValue(":Login_PIN",pin);
     if (!query.exec()) {
-        qDebug() << "Error inserting Argon2id KDF: " << query.lastError().text();
+        qDebug() << "Error inserting PBKDF2 KDF: " << query.lastError().text();
         return false;
     }
     return true;
 
 }
-
 
 QString MainWindow::Scrypt_KDF(const QString& password, const uint8_t* salt){
 
@@ -499,56 +505,7 @@ bool MainWindow::insert_Scrypt_KDF(const QString& username, const QString& hashe
 void MainWindow::Generate_TOTP(QString Login_email){
     const int secretLength = 20; // Adjust the length as needed
     QByteArray secret;
-    QSqlQuery query;
-
-    // Check if the secret key has already been generated and stored for the user
-    query.prepare("SELECT Shared_secret FROM login_information WHERE Login_name = :Login_name");
-    query.bindValue(":Login_name", usernameL);
-    if (query.exec()) {
-        if (query.next()) {
-            // Check if the query returned any rows
-            secret = query.value(0).toByteArray();
-            if (!secret.isEmpty()) {
-                // Secret key already exists for the user
-                qDebug() << "Secret key loaded from database";
-            } else {
-                // Secret key is NULL, generate a new one
-                if (!generate_Random_Secret(secret, secretLength)) {
-                    qDebug() << "Error generating secret key";
-                    return;
-                }
-
-                // Update the existing record in the database
-                query.prepare("UPDATE login_information SET Shared_secret = :Shared_secret, Shared_secret_string = :Shared_secret_string WHERE Login_name = :Login_name");
-                query.bindValue(":Shared_secret", secret);
-                query.bindValue(":Shared_secret_string", base32_Encode(secret));
-                query.bindValue(":Login_name", usernameL);
-                if (!query.exec()) {
-                    qDebug() << "Error updating secret key in the database:" << query.lastError().text();
-                    return;
-                }
-            }
-        } else {
-            // Secret key does not exist, generate a new one
-            if (!generate_Random_Secret(secret, secretLength)) {
-                qDebug() << "Error generating secret key";
-                return;
-            }
-
-            // Insert a new record into the database
-            query.prepare("INSERT INTO login_information (Login_name, Shared_secret, Shared_secret_string) VALUES (:Login_name, :Shared_secret, :Shared_secret_string)");
-            query.bindValue(":Login_name", usernameL);
-            query.bindValue(":Shared_secret", secret);
-            query.bindValue(":Shared_secret_string", base32_Encode(secret));
-            if (!query.exec()) {
-                qDebug() << "Error inserting secret key into the database:" << query.lastError().text();
-                return;
-            }
-        }
-    } else {
-        qDebug() << "Error executing SQL query:" << query.lastError().text();
-        return;
-    }
+    generate_Random_Secret(secret, secretLength);
 
     // Generate TOTP
     quint64 currentUnixTime = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
@@ -622,23 +579,49 @@ void MainWindow::Create_Manager_Window(){
 
 void MainWindow::on_Back_To_Login_Button_clicked()
 {
+
     ui->otp_line->clear();
     ui->pin_line->clear();
+    ui->line_username->clear();
+    ui->line_password->clear();
+    // Hide OTP input field and reset label
+    ui->otp_label->setText("");
+    ui->otp_line->hide();
 
+    // Show PIN input field
+    ui->pin_line->show();
+
+    // Switch to the login page (index 0 in the stacked widget)
     ui->stackedWidget->setCurrentIndex(0);
 }
 
 void MainWindow::on_Confirm_Button_OTP_clicked()
 {
-
-     //if (OTP_login() && PIN_Login()) {
-         ui->stackedWidget->setCurrentIndex(0);
-          Create_Manager_Window();
-   //  }
-     ui->otp_label->setText("Wrong PIN or OTP");
-
+    if (ui->pin_line->isVisible()) {
+        // If PIN input field is visible, verify PIN
+        if (PIN_Login()) {
+            // If PIN login is successful, update UI to show OTP input field
+            ui->otp_label->setText("PIN Login Successful");
+            qDebug() << "PIN Login Successful";
+            ui->pin_line->hide();
+            ui->pin_line->clear();
+            ui->otp_line->show();
+        } else {
+            // If PIN login fails, display error message
+            ui->otp_label->setText("Wrong PIN");
+        }
+    } else if (ui->otp_line->isVisible()) {
+        // If OTP input field is visible, verify OTP
+        if (OTP_login()) {
+            // If OTP login is successful, proceed to the next step
+            ui->stackedWidget->setCurrentIndex(0);
+            Create_Manager_Window();
+        } else {
+            // If OTP login fails, display error message
+            ui->otp_label->setText("Wrong OTP Password");
+        }
+    }
 }
-
 
 bool MainWindow::PIN_Login(){
     QString enteredPIN= ui->pin_line->text();

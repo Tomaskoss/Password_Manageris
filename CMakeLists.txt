@@ -4,6 +4,9 @@ project(PasswordManageris VERSION 0.1 LANGUAGES CXX)
 
 if(WIN32)
     set(PROJECT_FOLDER "D:/Password_Manageris")
+    set(OPENSSL_ROOT_DIR "${PROJECT_FOLDER}/libs/openSSL_build")
+
+
 elseif(UNIX)
     set(PROJECT_FOLDER "/home/tommy/Password_Manageris-Test")
 else()
@@ -36,24 +39,18 @@ set(PROJECT_SOURCES
         mainwindow.cpp
         mainwindow.h
         mainwindow.ui
+        app.rc
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(PasswordManageris
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-
         managerwindow.h managerwindow.cpp managerwindow.ui
         pictures.qrc
         dialog_generator.h dialog_generator.cpp dialog_generator.ui
         dialog_client_site.h dialog_client_site.cpp dialog_client_site.ui
         dialog_server.h dialog_server.cpp dialog_server.ui
-
-
-
-
-
-
 
 
     )

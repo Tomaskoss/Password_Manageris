@@ -5,6 +5,7 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+    a.setWindowIcon(QIcon(":/pictures/pictures/output-onlinepngtools.png"));
     MainWindow w;
     w.show();
     return a.exec();

@@ -1174,18 +1174,10 @@ gridline-color: rgb(255, 255, 255);
     <addaction name="actionGuide_for_begginers"/>
     <addaction name="actionTool_tips"/>
    </widget>
-   <widget class="QMenu" name="menuSettings">
-    <property name="title">
-     <string>Settings</string>
-    </property>
-    <addaction name="separator"/>
-    <addaction name="separator"/>
-   </widget>
    <addaction name="menuMenu"/>
    <addaction name="menuOptions"/>
    <addaction name="menuTools"/>
    <addaction name="menuHelp_guide"/>
-   <addaction name="menuSettings"/>
   </widget>
   <action name="actionAdd">
    <property name="checkable">

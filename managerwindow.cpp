@@ -438,7 +438,7 @@ void ManagerWindow::addRecord(const QString &appName, const QString &username, c
 
 void ManagerWindow::on_show_Password_Button_clicked()
 {
-      ui->comboBox->hide();
+     //ui->comboBox->hide();
     if (selectedRowID.isEmpty()) {
         qDebug()<<"rowid for show:"<<selectedRowID;
         qDebug()<<"No row selected nothing to show";
