@@ -123,6 +123,7 @@ void Dialog_client_site::on_table_export_clicked()
 {
 
     QString queryString = "SELECT `ID`, `Name of APP`, `Username`, `Password`, `URL`, `log`, `IV`, `Tag` FROM `" + login_name + "_password_data`;";
+
     QSqlQuery query;
     if (!query.exec(queryString)) {
         QMessageBox::critical(this, "Error", "Failed to execute query: " + query.lastError().text());
@@ -156,6 +157,7 @@ void Dialog_client_site::on_table_export_clicked()
             file.write(jsonData);
             file.close();
             QMessageBox::information(this, "Success", "User table exported successfully.");
+            logging("Exportovanie dát");
         } else {
             QMessageBox::critical(this, "Error", "Failed to open file for writing.");
         }
@@ -165,4 +167,26 @@ void Dialog_client_site::on_table_export_clicked()
 void Dialog_client_site::on_close_Button_clicked()
 {
     close();
+}
+
+void Dialog_client_site::logging(QString logType){
+    QSqlQuery query;
+
+    // Get current timestamp
+    QDateTime currentDateTime = QDateTime::currentDateTime();
+    QString timestamp = currentDateTime.toString(Qt::ISODate);
+
+    // Construct the INSERT query
+    QString queryString = "INSERT INTO `passwordmanager`.`" + login_name + "_log_data` (timestamp, log) VALUES (:timestamp, :log)";
+    query.prepare(queryString);
+    query.bindValue(":timestamp", timestamp);
+    query.bindValue(":log", logType);
+
+    // Execute the query
+    if (!query.exec()) {
+        qDebug() << "Error inserting log for" << logType << ":" << query.lastError().text();
+        return;
+    }
+
+    qDebug() << "Successfully logged '" << logType << "' action with timestamp" << timestamp;
 }

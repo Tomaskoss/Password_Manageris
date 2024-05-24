@@ -177,5 +177,27 @@ void Dialog_server::on_load_data_clicked()
     }
 
     QMessageBox::information(this, "Success", "Data loaded successfully.");
+    logging("Načitanie dát");
 }
 
+void Dialog_server::logging(QString logType){
+    QSqlQuery query;
+
+    // Get current timestamp
+    QDateTime currentDateTime = QDateTime::currentDateTime();
+    QString timestamp = currentDateTime.toString(Qt::ISODate);
+
+    // Construct the INSERT query
+    QString queryString = "INSERT INTO `passwordmanager`.`" + login_name + "_log_data` (timestamp, log) VALUES (:timestamp, :log)";
+    query.prepare(queryString);
+    query.bindValue(":timestamp", timestamp);
+    query.bindValue(":log", logType);
+
+    // Execute the query
+    if (!query.exec()) {
+        qDebug() << "Error inserting log for" << logType << ":" << query.lastError().text();
+        return;
+    }
+
+    qDebug() << "Successfully logged '" << logType << "' action with timestamp" << timestamp;
+}
