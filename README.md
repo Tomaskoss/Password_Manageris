@@ -4,22 +4,22 @@ Viac platformový správca hesiel s viac faktorovou autentizáciou. Pre bezpečn
 
 # Spustenie
 ## Pre rekvizity 
-*Qt prostredie
+* Qt prostredie
 * MySql Databaza (Server)
 * Windows 10 / Linux 
 
 # Windows a Linux 
-Pre spustenie je možné využiť docker-compose pre spustenie docker compose súboru ktorý výtvory počiatočné nastavenie MySQL serveru 
-Použijeme príkaz v terminály Docker compose up -d  pre spustenie.
-Následne spustíme Qt Creator kde otvoríme projekt.
-Stlačíme tlačidlo build a následne run. 
+* Pre spustenie je možné využiť docker-compose pre spustenie docker compose súboru ktorý výtvory počiatočné nastavenie MySQL serveru 
+* Použijeme príkaz v terminály Docker compose up -d  pre spustenie.
+* Následne spustíme Qt Creator kde otvoríme projekt.
+* Stlačíme tlačidlo build a následne run. 
 
 # Štruktúra repozitára
-zložka Video obsahuje video aplikácie s jeho možnostami.
-zložka Libs obsahuje potrebné externé knižnice pre spustenie aplikácie.
-zložka Deploy obsahuje aplikáciu pripravenú na použitie bez potreby buildu, je potrebné nastaviť iba mysql server.
-zložka pictures obsahuje obrázky správcu hesiel
-V štruktúre vidíme .cpp, .h a .ui súbory, ktoré obsahujú kód a grafické rozhranie aplikácie
+* Zložka Video obsahuje video aplikácie s jeho možnostami.
+* Zložka Libs obsahuje potrebné externé knižnice pre spustenie aplikácie.
+* zložka Deploy obsahuje aplikáciu pripravenú na použitie bez potreby buildu, je potrebné nastaviť iba mysql server.
+* zložka pictures obsahuje obrázky správcu hesiel
+* V štruktúre vidíme .cpp, .h a .ui súbory, ktoré obsahujú kód a grafické rozhranie aplikácie
 
 # Licencia
-Aplikácia je distribuovaná pod licenciou LGPL.
+* Aplikácia je distribuovaná pod licenciou LGPL-3.0.
