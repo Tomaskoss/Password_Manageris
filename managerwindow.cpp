@@ -960,6 +960,7 @@ void ManagerWindow::on_server_start_clicked()
     } else {
         // Handle the case where the dialog was not accepted
         qDebug() << "Dialog was not accepted";
+        refreshTable();
     }
 
 }

@@ -177,7 +177,7 @@ void Dialog_server::on_load_data_clicked()
     }
 
     QMessageBox::information(this, "Success", "Data loaded successfully.");
-    logging("Načitanie dát");
+    logging("Loaded Data");
 }
 
 void Dialog_server::logging(QString logType){
