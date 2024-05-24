@@ -5,7 +5,7 @@ Viac platformový správca hesiel s viac faktorovou autentizáciou. Pre bezpečn
 # Spustenie
 ## Pre rekvizity 
 * Qt prostredie
-* MySql Databaza (Server)
+* Docker
 * Windows 10 / Linux 
 
 # Windows a Linux 
