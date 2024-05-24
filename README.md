@@ -14,6 +14,9 @@ Viac platformový správca hesiel s viac faktorovou autentizáciou. Pre bezpečn
 * Následne spustíme Qt Creator kde otvoríme projekt.
 * Stlačíme tlačidlo build a následne run. 
 
+# Deploy Verzia
+* Deploy verzia by mala ísť spustiť bez Qt prostredia a bez nutnosti buildu. Potrebuje len spustiť docker
+
 # Štruktúra repozitára
 * Zložka Video obsahuje video aplikácie s jeho možnostami.
 * Zložka Libs obsahuje potrebné externé knižnice pre spustenie aplikácie.
