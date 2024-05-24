@@ -123,6 +123,10 @@ void MainWindow::on_LogIn_Button_clicked()
 
                  ui->stackedWidget->setCurrentIndex(3);
                 Generate_TOTP(Login_email);
+            }else{
+                qDebug()<<"Wrong password";
+                logging("Unsuccessful login");
+
             }
         }
         else if (algorithm_type=="PBKDF2"){
@@ -141,6 +145,7 @@ void MainWindow::on_LogIn_Button_clicked()
                 }
                 else{
                     qDebug()<<"Wrong password";
+                    logging("Unsuccessful login");
                 }
         }else if (algorithm_type=="Scrypt"){
               int result = EVP_PBE_scrypt(passwordL_char, passwordL_lenght, salt, SALTLEN, iterations, r_BLOCK_SIZE, p_PARALLELISM_FACTOR, MAX_MEMORY, generated_hash, HASHLEN);
@@ -159,6 +164,7 @@ void MainWindow::on_LogIn_Button_clicked()
                     }
                     else{
                         qDebug()<<"Wrong password";
+                        logging("Unsuccessful login");
             }   }
         }
     }
@@ -543,7 +549,7 @@ void MainWindow::send_Email(const QString &totp, const QString &recipientEmail) 
     message.addPart(text);
 
     // Now we can send the mail
-    SmtpClient smtp("smtp.gmail.com", 465, SmtpClient::SslConnection);
+    SmtpClient smtp("smtp.gmail.com", 587, SmtpClient::TlsConnection);
 
     smtp.connectToHost();
     if (!smtp.waitForReadyConnected()) {
@@ -616,6 +622,11 @@ void MainWindow::on_Confirm_Button_OTP_clicked()
             // If OTP login is successful, proceed to the next step
             ui->stackedWidget->setCurrentIndex(0);
             Create_Manager_Window();
+            ui->pin_line->show();
+            ui->otp_line->clear();
+            ui->otp_line->hide();
+            ui->otp_label->setText("Please login");
+
         } else {
             // If OTP login fails, display error message
             ui->otp_label->setText("Wrong OTP Password");
@@ -743,4 +754,26 @@ bool MainWindow::create_User_Table_For_Logs(const QString& table_name_log){
     }
 
     return true;
+}
+
+void MainWindow::logging(QString logType){
+    QSqlQuery query;
+
+    // Get current timestamp
+    QDateTime currentDateTime = QDateTime::currentDateTime();
+    QString timestamp = currentDateTime.toString(Qt::ISODate);
+
+    // Construct the INSERT query
+    QString queryString = "INSERT INTO `passwordmanager`.`" + usernameL + "_log_data` (timestamp, log) VALUES (:timestamp, :log)";
+    query.prepare(queryString);
+    query.bindValue(":timestamp", timestamp);
+    query.bindValue(":log", logType);
+
+    // Execute the query
+    if (!query.exec()) {
+        qDebug() << "Error inserting log for" << logType << ":" << query.lastError().text();
+        return;
+    }
+
+    qDebug() << "Successfully logged '" << logType << "' action with timestamp" << timestamp;
 }

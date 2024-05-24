@@ -56,7 +56,7 @@ private:
     void Create_Manager_Window();
     bool validate_Register_Credentials();
     bool is_Username_Available(const QString& username);
-
+    void logging(QString logType);
 
 
     void register_User();
