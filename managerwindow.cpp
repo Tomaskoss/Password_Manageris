@@ -465,7 +465,7 @@ void ManagerWindow::on_show_Password_Edit_Button_clicked(){
         QString encryptedPassword = std::get<1>(encryptionData); // Change to encryptedPassword
         QString tagString = std::get<2>(encryptionData);
         QString encryptionMethod = std::get<3>(encryptionData);
-
+        qDebug()<<"encryption: "<<encryptionMethod;
         if (encryptionMethod == "Aes_GCM_256") {
             decryptedText = aes_GCM_DECRYPT(ivString, encryptedPassword, tagString);
             qDebug() << "Aes decryption";
@@ -473,9 +473,12 @@ void ManagerWindow::on_show_Password_Edit_Button_clicked(){
             // Decrypt ChaCha20 using both IV and encrypted password
             decryptedText = chacha20_decrypt(encryptedPassword, ivString);
             qDebug() << "ChaCha20 decryption";
-        } else {
+        } else if (encryptionMethod.isEmpty()){
+
+            decryptedText= ui->password_Line->text();
+        }
+        else{
             qDebug() << "Unsupported encryption algorithm selected.";
-            return;
         }
 
         qDebug() << "Decrypted text:" << decryptedText;
