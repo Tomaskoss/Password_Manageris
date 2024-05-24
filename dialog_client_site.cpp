@@ -63,7 +63,7 @@ void Dialog_client_site::on_send_file_button_clicked()
     }
 
     // Command to send the file to the server using OpenSSL client with specified IP, port, and certificates
-    QString command = QString("openssl s_client -connect %1:%2 -cert %3/server-cert.pem -key %3/server-key.pem < %4")
+    QString command = QString("openssl s_client -connect %1:%2 -cert %3/client-cert.pem -key %3/client-key.pem < %4")
                           .arg(ip_address_server)
                           .arg(port)
                           .arg(currentDir)

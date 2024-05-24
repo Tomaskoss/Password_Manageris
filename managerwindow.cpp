@@ -278,6 +278,7 @@ void ManagerWindow::on_Confirm_Button_clicked()
     clearData();
     refreshTable();
     ui->password_Line->setEchoMode(QLineEdit::Password);
+    passwordsVisible=false;
 
 }
 
