@@ -3,7 +3,7 @@
 Viac platformový správca hesiel s viac faktorovou autentizáciou. Pre bezpečné uchovávanie hlavného hesla je možné využiť KDF (Argon2id,Scrypt,PBKDF2) a pre šifrovanie hesiel v zázname využíva AES-256-GCM móde, ChaCha20.
 
 # Spustenie
-## Pre rekvizity 
+## Prerekvizity
 * Qt prostredie
 * Docker
 * Windows 10 / Linux 

@@ -3,12 +3,13 @@ cmake_minimum_required(VERSION 3.5)
 project(PasswordManageris VERSION 0.1 LANGUAGES CXX)
 
 if(WIN32)
-    set(PROJECT_FOLDER "D:/Password_Manageris")
+    set(PROJECT_FOLDER "${CMAKE_SOURCE_DIR}")
+
     set(OPENSSL_ROOT_DIR "${PROJECT_FOLDER}/libs/openSSL_build")
 
 
 elseif(UNIX)
-    set(PROJECT_FOLDER "/home/tommy/Password_Manageris-Test")
+    set(PROJECT_FOLDER "${CMAKE_SOURCE_DIR}")
 else()
     message(FATAL_ERROR "Unsupported OS")
 endif()
