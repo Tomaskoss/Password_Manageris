@@ -615,6 +615,7 @@ void MainWindow::on_Confirm_Button_OTP_clicked()
         } else {
             // If PIN login fails, display error message
             ui->otp_label->setText("Wrong PIN");
+            logging("Unsuccessful logging on PIN stage");
         }
     } else if (ui->otp_line->isVisible()) {
         // If OTP input field is visible, verify OTP
@@ -630,6 +631,7 @@ void MainWindow::on_Confirm_Button_OTP_clicked()
         } else {
             // If OTP login fails, display error message
             ui->otp_label->setText("Wrong OTP Password");
+            logging("Unsuccessful logging on OTP stage");
         }
     }
 }
