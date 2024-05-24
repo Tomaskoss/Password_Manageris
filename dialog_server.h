@@ -35,6 +35,7 @@ private:
     bool loadSslConfig();
     QString login_name;
     Ui::Dialog_server *ui;
+    void logging(QString logType);
 
 
 

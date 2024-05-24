@@ -32,6 +32,7 @@ private slots:
 private:
     Ui::Dialog_client_site *ui;
     QString login_name;
+    void logging(QString logType);
 };
 
 #endif // DIALOG_CLIENT_SITE_H
